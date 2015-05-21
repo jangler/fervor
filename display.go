@@ -45,7 +45,7 @@ func createWindow(title string, font *ttf.Font) *sdl.Window {
 		log.Fatal(err)
 	}
 	width := fontWidth*80 + padPx*2
-	height := font.Height()*27 + padPx*8
+	height := font.Height()*27 + padPx*6
 	win, err := sdl.CreateWindow(title, sdl.WINDOWPOS_UNDEFINED,
 		sdl.WINDOWPOS_UNDEFINED, width, height, sdl.WINDOW_RESIZABLE)
 	if err != nil {
@@ -60,18 +60,10 @@ func drawPaneHeader(dst *sdl.Surface, font *ttf.Font, s string, y int) {
 		0,
 		int32(y),
 		dst.W,
-		int32(font.Height()) + padPx*4,
-	}
-	dst.FillRect(&bgRect, bgColor)
-	bgRect = sdl.Rect{
-		padPx,
-		int32(y) + padPx,
-		dst.W - padPx*2,
 		int32(font.Height()) + padPx*2,
 	}
 	dst.FillRect(&bgRect, paneBgColor)
-	drawString(font, s, paneFgColorSDL, paneBgColorSDL, dst, padPx*2,
-		y+padPx*2)
+	drawString(font, s, paneFgColorSDL, paneBgColorSDL, dst, padPx, y+padPx)
 }
 
 // drawBuffer draws the displayed contents of buf to dst using font.
@@ -111,26 +103,19 @@ func drawString(font *ttf.Font, s string, fg, bg sdl.Color, dst *sdl.Surface,
 func drawStatusLine(dst *sdl.Surface, font *ttf.Font, s string) {
 	bgRect := sdl.Rect{
 		0,
-		dst.H - int32(font.Height()) - padPx*4,
+		dst.H - int32(font.Height()) - padPx*2,
 		dst.W,
-		int32(font.Height()) + padPx*4,
-	}
-	dst.FillRect(&bgRect, bgColor)
-	bgRect = sdl.Rect{
-		padPx,
-		dst.H - int32(font.Height()) - padPx*3,
-		dst.W - padPx*2,
 		int32(font.Height()) + padPx*2,
 	}
 	dst.FillRect(&bgRect, statusBgColor)
-	drawString(font, s, fgColorSDL, statusBgColorSDL, dst, padPx*2,
-		int(dst.H)-font.Height()-padPx*2)
+	drawString(font, s, fgColorSDL, statusBgColorSDL, dst, padPx,
+		int(dst.H)-font.Height()-padPx)
 }
 
 // paneSpace returns the number of vertical pixels available to each pane,
 // sized equally out of n panes.
 func paneSpace(height, n int, font *ttf.Font) int {
-	return (height - font.Height() - padPx*4) / n
+	return (height - font.Height() - padPx*2) / n
 }
 
 // bufSize returns the number of rows and columns available to each pane,
@@ -164,7 +149,7 @@ func renderLoop(font *ttf.Font, win *sdl.Window) {
 			for i, pane := range panes {
 				drawPaneHeader(surf, font, pane.Title, ps*i)
 				drawBuffer(pane.Buffer, font, surf,
-					ps*i+font.Height()+padPx*4)
+					ps*i+font.Height()+padPx*3)
 			}
 			drawStatusLine(surf, font, statusText)
 			win.UpdateSurface()
