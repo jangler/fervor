@@ -10,9 +10,8 @@ import (
 	"github.com/veandco/go-sdl2/sdl_ttf"
 )
 
-var quit = make(chan int)
-
-func getFont() *ttf.Font {
+// GetFont loads the default TTF from memory and returns it.
+func GetFont() *ttf.Font {
 	data, err := Asset("data/DejaVuSansMono.ttf")
 	if err != nil {
 		log.Fatal(err)
@@ -33,7 +32,7 @@ func main() {
 	ttf.Init()
 
 	defer ttf.Quit()
-	font := getFont()
+	font := GetFont()
 	fontWidth, _, err := font.SizeUTF8("0")
 	if err != nil {
 		log.Fatal(err)
@@ -49,8 +48,7 @@ func main() {
 	}
 	defer win.Destroy()
 
-	go eventLoop(buf, font, win)
-	go renderLoop(buf, font, win)
-	render <- 1
-	<-quit
+	go RenderLoop(buf, font, win)
+	go func() { Render <- 1 }()
+	EventLoop(buf, font, win)
 }

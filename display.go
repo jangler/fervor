@@ -9,15 +9,20 @@ import (
 )
 
 var (
-	bgColor uint32 = 0xffe0e0e0
+	// Colors for use with FillRect.
+	BgColor uint32 = 0xffe0e0e0
 
-	sdlBgColor = sdl.Color{0xe0, 0xe0, 0xe0, 0xff}
-	sdlFgColor = sdl.Color{0x20, 0x20, 0x20, 0xff}
+	// Colors for use with ttf functions.
+	BgColorSDL = sdl.Color{0xe0, 0xe0, 0xe0, 0xff}
+	FgColorSDL = sdl.Color{0x20, 0x20, 0x20, 0xff}
 )
 
-var render = make(chan int)
+// Render is a channel used to communicate with RenderLoop.
+var Render = make(chan int)
 
-func drawString(font *ttf.Font, s string, fg, bg sdl.Color, dst *sdl.Surface,
+// DrawString draws s to dst at (x, y) using font, and returns x plus the width
+// of the text in pixels.
+func DrawString(font *ttf.Font, s string, fg, bg sdl.Color, dst *sdl.Surface,
 	x, y int) int {
 	if s != "" {
 		surf, err := font.RenderUTF8_Shaded(s, fg, bg)
@@ -35,19 +40,20 @@ func drawString(font *ttf.Font, s string, fg, bg sdl.Color, dst *sdl.Surface,
 	return x
 }
 
-func renderLoop(buf *edit.Buffer, font *ttf.Font, win *sdl.Window) {
-	for {
-		<-render
+// RenderLoop listens on the Render channel and draws the screen each time a
+// value is received.
+func RenderLoop(buf *edit.Buffer, font *ttf.Font, win *sdl.Window) {
+	for range Render {
 		surf, err := win.GetSurface()
 		if err != nil {
 			log.Fatal(err)
 		}
-		surf.FillRect(&sdl.Rect{0, 0, surf.W, surf.H}, bgColor)
+		surf.FillRect(&sdl.Rect{0, 0, surf.W, surf.H}, BgColor)
 		x, y := 0, 0
 		for _, line := range buf.DisplayLines() {
 			for e := line.Front(); e != nil; e = e.Next() {
 				text := e.Value.(edit.Fragment).Text
-				x = drawString(font, text, sdlFgColor, sdlBgColor, surf, x, y)
+				x = DrawString(font, text, FgColorSDL, BgColorSDL, surf, x, y)
 			}
 			y += font.Height()
 			x = 0
