@@ -126,9 +126,10 @@ func drawStatusLine(dst *sdl.Surface, font *ttf.Font, s string, pane Pane) {
 	line := pane.Get(edit.Index{index.Line, 0}, index)
 	col := 0
 	for _, ch := range line {
-		col++
 		if ch == '\t' {
 			col += pane.TabWidth - col%pane.TabWidth
+		} else {
+			col++
 		}
 	}
 	cursorPos := fmt.Sprintf("%d,%d", index.Line, index.Char)

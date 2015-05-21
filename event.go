@@ -11,7 +11,8 @@ import (
 // textInput inserts text into the focus, or performs another action depending
 // on the contents of the string.
 func textInput(buf *edit.Buffer, s string) {
-	buf.Insert(buf.End(), s)
+	index, _ := buf.IndexFromMark(insertMark)
+	buf.Insert(index, s)
 }
 
 // resize resizes the panes in the display and requests a render.
@@ -31,11 +32,26 @@ func eventLoop(panes []Pane, font *ttf.Font, win *sdl.Window) {
 		case *sdl.KeyDownEvent:
 			switch event.Keysym.Sym {
 			case sdl.K_BACKSPACE:
-				pane.Delete(pane.ShiftIndex(pane.End(), -1), pane.End())
+				index, _ := pane.IndexFromMark(insertMark)
+				pane.Delete(pane.ShiftIndex(index, -1), index)
+			case sdl.K_DOWN:
+				index, _ := pane.IndexFromMark(insertMark)
+				col, row := pane.CoordsFromIndex(index)
+				pane.Mark(pane.IndexFromCoords(col, row+1), insertMark)
+			case sdl.K_LEFT:
+				index, _ := pane.IndexFromMark(insertMark)
+				pane.Mark(pane.ShiftIndex(index, -1), insertMark)
 			case sdl.K_RETURN:
 				textInput(pane.Buffer, "\n")
+			case sdl.K_RIGHT:
+				index, _ := pane.IndexFromMark(insertMark)
+				pane.Mark(pane.ShiftIndex(index, 1), insertMark)
 			case sdl.K_TAB:
 				textInput(pane.Buffer, "\t")
+			case sdl.K_UP:
+				index, _ := pane.IndexFromMark(insertMark)
+				col, row := pane.CoordsFromIndex(index)
+				pane.Mark(pane.IndexFromCoords(col, row-1), insertMark)
 			case sdl.K_q:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
 					return
