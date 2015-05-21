@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 
+	"github.com/jangler/edit"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/sdl_ttf"
 )
@@ -17,11 +18,11 @@ var (
 var render = make(chan int)
 
 func drawString(font *ttf.Font, s string, fg, bg sdl.Color, dst *sdl.Surface,
-	x, y int) {
+	x, y int) int {
 	if s != "" {
 		surf, err := font.RenderUTF8_Shaded(s, fg, bg)
 		if err != nil {
-			log.Fatal(err)
+			log.Fatal(err, s)
 		}
 		defer surf.Free()
 		err = surf.Blit(&sdl.Rect{0, 0, surf.W, surf.H}, dst,
@@ -29,10 +30,12 @@ func drawString(font *ttf.Font, s string, fg, bg sdl.Color, dst *sdl.Surface,
 		if err != nil {
 			log.Fatal(err)
 		}
+		x += int(surf.W)
 	}
+	return x
 }
 
-func renderLoop(win *sdl.Window, font *ttf.Font) {
+func renderLoop(buf *edit.Buffer, font *ttf.Font, win *sdl.Window) {
 	for {
 		<-render
 		surf, err := win.GetSurface()
@@ -40,7 +43,15 @@ func renderLoop(win *sdl.Window, font *ttf.Font) {
 			log.Fatal(err)
 		}
 		surf.FillRect(&sdl.Rect{0, 0, surf.W, surf.H}, bgColor)
-		drawString(font, "Hello, world!", sdlFgColor, sdlBgColor, surf, 0, 0)
+		x, y := 0, 0
+		for _, line := range buf.DisplayLines() {
+			for e := line.Front(); e != nil; e = e.Next() {
+				text := e.Value.(edit.Fragment).Text
+				x = drawString(font, text, sdlFgColor, sdlBgColor, surf, x, y)
+			}
+			y += font.Height()
+			x = 0
+		}
 		win.UpdateSurface()
 	}
 }

@@ -5,9 +5,12 @@ import (
 	"os"
 	"unsafe"
 
+	"github.com/jangler/edit"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/sdl_ttf"
 )
+
+var quit = make(chan int)
 
 func getFont() *ttf.Font {
 	data, err := Asset("data/DejaVuSansMono.ttf")
@@ -36,6 +39,8 @@ func main() {
 		log.Fatal(err)
 	}
 
+	buf := edit.NewBuffer()
+
 	win, err := sdl.CreateWindow(os.Args[0], sdl.WINDOWPOS_UNDEFINED,
 		sdl.WINDOWPOS_UNDEFINED, fontWidth*80, font.Height()*25,
 		sdl.WINDOW_RESIZABLE)
@@ -44,7 +49,8 @@ func main() {
 	}
 	defer win.Destroy()
 
-	go renderLoop(win, font)
+	go eventLoop(buf, font, win)
+	go renderLoop(buf, font, win)
 	render <- 1
-	eventLoop(win)
+	<-quit
 }
