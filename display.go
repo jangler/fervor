@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"log"
 
 	"github.com/jangler/edit"
@@ -13,6 +14,7 @@ const padPx = 2 // number of pixels used to pad UI elements
 var (
 	// colors for use with FillRect
 	bgColor       uint32 = 0xffffffff
+	paneFgColor   uint32 = 0xff375eab
 	paneBgColor   uint32 = 0xffe0ebf5
 	statusBgColor uint32 = 0xffe9e9e9
 
@@ -31,19 +33,18 @@ var (
 	paneSet = make(chan []Pane) // used to update pane list
 )
 
+var fontWidth int
+
 // Pane is a buffer with associated metadata.
 type Pane struct {
 	*edit.Buffer
-	Title string
+	Title    string
+	TabWidth int
 }
 
 // createWindow returns a new SDL window of appropriate size given font, and
 // titled title.
 func createWindow(title string, font *ttf.Font) *sdl.Window {
-	fontWidth, _, err := font.SizeUTF8("0")
-	if err != nil {
-		log.Fatal(err)
-	}
 	width := fontWidth*80 + padPx*2
 	height := font.Height()*27 + padPx*6
 	win, err := sdl.CreateWindow(title, sdl.WINDOWPOS_UNDEFINED,
@@ -69,10 +70,16 @@ func drawPaneHeader(dst *sdl.Surface, font *ttf.Font, s string, y int) {
 // drawBuffer draws the displayed contents of buf to dst using font.
 func drawBuffer(buf *edit.Buffer, font *ttf.Font, dst *sdl.Surface, y int) {
 	x := padPx
-	for _, line := range buf.DisplayLines() {
+	mark, _ := buf.IndexFromMark(insertMark)
+	col, row := buf.CoordsFromIndex(mark)
+	for i, line := range buf.DisplayLines() {
 		for e := line.Front(); e != nil; e = e.Next() {
 			text := e.Value.(edit.Fragment).Text
 			x = drawString(font, text, fgColorSDL, bgColorSDL, dst, x, y)
+		}
+		if i == row {
+			dst.FillRect(&sdl.Rect{int32(padPx + fontWidth*col), int32(y),
+				1, int32(font.Height())}, paneFgColor)
 		}
 		y += font.Height()
 		x = padPx
@@ -100,7 +107,8 @@ func drawString(font *ttf.Font, s string, fg, bg sdl.Color, dst *sdl.Surface,
 }
 
 // drawStatusLine draws s at the bottom of dst using font.
-func drawStatusLine(dst *sdl.Surface, font *ttf.Font, s string) {
+func drawStatusLine(dst *sdl.Surface, font *ttf.Font, s string, pane Pane) {
+	// draw background
 	bgRect := sdl.Rect{
 		0,
 		dst.H - int32(font.Height()) - padPx*2,
@@ -108,8 +116,27 @@ func drawStatusLine(dst *sdl.Surface, font *ttf.Font, s string) {
 		int32(font.Height()) + padPx*2,
 	}
 	dst.FillRect(&bgRect, statusBgColor)
+
+	// draw status text
 	drawString(font, s, fgColorSDL, statusBgColorSDL, dst, padPx,
 		int(dst.H)-font.Height()-padPx)
+
+	// draw cursor pos
+	index, _ := pane.IndexFromMark(insertMark)
+	line := pane.Get(edit.Index{index.Line, 0}, index)
+	col := 0
+	for _, ch := range line {
+		col++
+		if ch == '\t' {
+			col += pane.TabWidth - col%pane.TabWidth
+		}
+	}
+	cursorPos := fmt.Sprintf("%d,%d", index.Line, index.Char)
+	if col != index.Char {
+		cursorPos += fmt.Sprintf("-%d", col)
+	}
+	drawString(font, cursorPos, fgColorSDL, statusBgColorSDL, dst,
+		int(dst.W)-padPx-fontWidth*12, int(dst.H)-font.Height()-padPx)
 }
 
 // paneSpace returns the number of vertical pixels available to each pane,
@@ -121,10 +148,6 @@ func paneSpace(height, n int, font *ttf.Font) int {
 // bufSize returns the number of rows and columns available to each pane,
 // sized equally out of n panes.
 func bufSize(width, height, n int, font *ttf.Font) (cols, rows int) {
-	fontWidth, _, err := font.SizeUTF8("0")
-	if err != nil {
-		log.Fatal(err)
-	}
 	cols = (width - padPx*2) / fontWidth
 	rows = paneSpace(height, n, font) / font.Height()
 	return
@@ -151,7 +174,7 @@ func renderLoop(font *ttf.Font, win *sdl.Window) {
 				drawBuffer(pane.Buffer, font, surf,
 					ps*i+font.Height()+padPx*3)
 			}
-			drawStatusLine(surf, font, statusText)
+			drawStatusLine(surf, font, statusText, panes[0])
 			win.UpdateSurface()
 		case s := <-status:
 			if s != statusText {

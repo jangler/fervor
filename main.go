@@ -13,6 +13,8 @@ import (
 	"github.com/veandco/go-sdl2/sdl_ttf"
 )
 
+const insertMark = iota // ID of the insertion (cursor) mark
+
 // getFont loads the default TTF from memory and returns it.
 func getFont() *ttf.Font {
 	data, err := Asset("data/DejaVuSansMono.ttf")
@@ -47,6 +49,7 @@ func openFile(path string) (*edit.Buffer, error) {
 	}
 	buf := edit.NewBuffer()
 	buf.Insert(buf.End(), string(contents))
+	buf.Mark(edit.Index{1, 0}, insertMark)
 	return buf, nil
 }
 
@@ -60,27 +63,30 @@ func main() {
 	defer ttf.Quit()
 
 	font := getFont()
+	var err error
+	fontWidth, _, err = font.SizeUTF8("0")
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	win := createWindow(os.Args[0], font)
 	defer win.Destroy()
 
 	panes := make([]Pane, 0)
-	if flag.NArg() > 0 {
-		for _, arg := range flag.Args() {
-			if buf, err := openFile(arg); err == nil {
-				go func() {
-					status <- fmt.Sprintf(`Opened "%s".`, flag.Arg(0))
-				}()
-				panes = append(panes, Pane{buf, arg})
-			} else {
-				go func() { status <- err.Error() }()
-			}
-		}
-	} else {
-		go func() { status <- "New file." }()
+	args := flag.Args()
+	if len(args) == 0 {
+		args = []string{os.DevNull}
 	}
-	if len(panes) == 0 {
-		panes = append(panes, Pane{edit.NewBuffer(), "[new file]"})
+	for _, arg := range args {
+		if buf, err := openFile(arg); err == nil {
+			go func() {
+				status <- fmt.Sprintf(`Opened "%s".`, arg)
+			}()
+			buf.SetTabWidth(4)
+			panes = append(panes, Pane{buf, arg, 4})
+		} else {
+			go func() { status <- err.Error() }()
+		}
 	}
 
 	go renderLoop(font, win)
