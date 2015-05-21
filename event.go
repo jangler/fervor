@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"log"
 
 	"github.com/jangler/edit"
 	"github.com/veandco/go-sdl2/sdl"
@@ -15,18 +14,28 @@ func textInput(buf *edit.Buffer, s string) {
 	buf.Insert(buf.End(), s)
 }
 
+// resize resizes the panes in the display and requests a render.
+func resize(panes []Pane, font *ttf.Font, width, height int) {
+	cols, rows := bufSize(width, height, len(panes), font)
+	for _, pane := range panes {
+		pane.SetSize(cols, rows)
+	}
+	render <- 1
+}
+
 // eventLoop handles SDL events until quit is requested.
-func eventLoop(buf *edit.Buffer, font *ttf.Font, win *sdl.Window) {
+func eventLoop(panes []Pane, font *ttf.Font, win *sdl.Window) {
+	pane := panes[0]
 	for {
 		switch event := sdl.WaitEvent().(type) {
 		case *sdl.KeyDownEvent:
 			switch event.Keysym.Sym {
 			case sdl.K_BACKSPACE:
-				buf.Delete(buf.ShiftIndex(buf.End(), -1), buf.End())
+				pane.Delete(pane.ShiftIndex(pane.End(), -1), pane.End())
 			case sdl.K_RETURN:
-				textInput(buf, "\n")
+				textInput(pane.Buffer, "\n")
 			case sdl.K_TAB:
-				textInput(buf, "\t")
+				textInput(pane.Buffer, "\t")
 			case sdl.K_q:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
 					return
@@ -37,7 +46,7 @@ func eventLoop(buf *edit.Buffer, font *ttf.Font, win *sdl.Window) {
 			return
 		case *sdl.TextInputEvent:
 			if n := bytes.Index(event.Text[:], []byte{0}); n > 0 {
-				textInput(buf, string(event.Text[:n]))
+				textInput(pane.Buffer, string(event.Text[:n]))
 				render <- 1
 			}
 		case *sdl.WindowEvent:
@@ -45,13 +54,7 @@ func eventLoop(buf *edit.Buffer, font *ttf.Font, win *sdl.Window) {
 			case sdl.WINDOWEVENT_EXPOSED:
 				win.UpdateSurface()
 			case sdl.WINDOWEVENT_RESIZED:
-				fontWidth, _, err := font.SizeUTF8("0")
-				if err != nil {
-					log.Fatal(err)
-				}
-				buf.SetSize(int(event.Data1)/fontWidth,
-					int(event.Data2)/font.Height())
-				render <- 1
+				resize(panes, font, int(event.Data1), int(event.Data2))
 			}
 		}
 	}

@@ -31,14 +31,10 @@ func getFont() *ttf.Font {
 // initFlag processes command-line flags and arguments.
 func initFlag() {
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [<file>]\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [<file> ...]\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 	flag.Parse()
-	if flag.NArg() > 1 {
-		flag.Usage()
-		os.Exit(1)
-	}
 }
 
 // openFile attempts to open the file given by path and return a new buffer
@@ -68,21 +64,28 @@ func main() {
 	win := createWindow(os.Args[0], font)
 	defer win.Destroy()
 
-	var buf *edit.Buffer
-	if flag.NArg() == 1 {
-		var err error
-		if buf, err = openFile(flag.Arg(0)); err == nil {
-			go func() { status <- fmt.Sprintf(`Opened "%s".`, flag.Arg(0)) }()
-		} else {
-			go func() { status <- err.Error() }()
+	panes := make([]Pane, 0)
+	if flag.NArg() > 0 {
+		for _, arg := range flag.Args() {
+			if buf, err := openFile(arg); err == nil {
+				go func() {
+					status <- fmt.Sprintf(`Opened "%s".`, flag.Arg(0))
+				}()
+				panes = append(panes, Pane{buf, arg})
+			} else {
+				go func() { status <- err.Error() }()
+			}
 		}
 	} else {
 		go func() { status <- "New file." }()
 	}
-	if buf == nil {
-		buf = edit.NewBuffer()
+	if len(panes) == 0 {
+		panes = append(panes, Pane{edit.NewBuffer(), "[new file]"})
 	}
 
-	go renderLoop(buf, font, win)
-	eventLoop(buf, font, win)
+	go renderLoop(font, win)
+	paneSet <- panes
+	w, h := win.GetSize()
+	resize(panes, font, w, h)
+	eventLoop(panes, font, win)
 }
