@@ -38,8 +38,24 @@ var fontWidth int
 // Pane is a buffer with associated metadata.
 type Pane struct {
 	*edit.Buffer
-	Title    string
-	TabWidth int
+	Title      string
+	TabWidth   int
+	Cols, Rows int
+}
+
+// See ensurees that the mark with ID id is visible on the pane's screen.
+func (p Pane) See(id int) {
+	index, _ := p.IndexFromMark(id)
+	_, row := p.CoordsFromIndex(index)
+	if row < -p.Rows {
+		p.Scroll(row - p.Rows/2)
+	} else if row < 0 {
+		p.Scroll(row)
+	} else if row >= p.Rows*2 {
+		p.Scroll(row + 1 - p.Rows/2)
+	} else if row >= p.Rows {
+		p.Scroll(row + 1 - p.Rows)
+	}
 }
 
 // createWindow returns a new SDL window of appropriate size given font, and
@@ -137,7 +153,16 @@ func drawStatusLine(dst *sdl.Surface, font *ttf.Font, s string, pane Pane) {
 		cursorPos += fmt.Sprintf("-%d", col)
 	}
 	drawString(font, cursorPos, fgColorSDL, statusBgColorSDL, dst,
-		int(dst.W)-padPx-fontWidth*12, int(dst.H)-font.Height()-padPx)
+		int(dst.W)-padPx-fontWidth*17, int(dst.H)-font.Height()-padPx)
+
+	// draw scroll percent
+	f := pane.ScrollFraction()
+	scrollStr := fmt.Sprintf("%d%%", int(f*100))
+	if f < 0 {
+		scrollStr = "All"
+	}
+	drawString(font, scrollStr, fgColorSDL, statusBgColorSDL, dst,
+		int(dst.W)-padPx-fontWidth*4, int(dst.H)-font.Height()-padPx)
 }
 
 // paneSpace returns the number of vertical pixels available to each pane,
@@ -150,7 +175,8 @@ func paneSpace(height, n int, font *ttf.Font) int {
 // sized equally out of n panes.
 func bufSize(width, height, n int, font *ttf.Font) (cols, rows int) {
 	cols = (width - padPx*2) / fontWidth
-	rows = paneSpace(height, n, font) / font.Height()
+	rows = (paneSpace(height, n, font) - font.Height() - padPx*2) /
+		font.Height()
 	return
 }
 

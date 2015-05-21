@@ -83,7 +83,7 @@ func main() {
 				status <- fmt.Sprintf(`Opened "%s".`, arg)
 			}()
 			buf.SetTabWidth(4)
-			panes = append(panes, Pane{buf, arg, 4})
+			panes = append(panes, Pane{buf, arg, 4, 80, 25})
 		} else {
 			go func() { status <- err.Error() }()
 		}

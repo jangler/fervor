@@ -19,6 +19,7 @@ func textInput(buf *edit.Buffer, s string) {
 func resize(panes []Pane, font *ttf.Font, width, height int) {
 	cols, rows := bufSize(width, height, len(panes), font)
 	for _, pane := range panes {
+		pane.Cols, pane.Rows = cols, rows
 		pane.SetSize(cols, rows)
 	}
 	render <- 1
@@ -57,6 +58,7 @@ func eventLoop(panes []Pane, font *ttf.Font, win *sdl.Window) {
 					return
 				}
 			}
+			pane.See(insertMark)
 			render <- 1
 		case *sdl.QuitEvent:
 			return
