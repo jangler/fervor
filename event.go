@@ -9,14 +9,14 @@ import (
 	"github.com/veandco/go-sdl2/sdl_ttf"
 )
 
-// TextInput inserts text into the focus, or performs another action depending
+// textInput inserts text into the focus, or performs another action depending
 // on the contents of the string.
-func TextInput(buf *edit.Buffer, s string) {
+func textInput(buf *edit.Buffer, s string) {
 	buf.Insert(buf.End(), s)
 }
 
-// EventLoop handles SDL events until quit is requested.
-func EventLoop(buf *edit.Buffer, font *ttf.Font, win *sdl.Window) {
+// eventLoop handles SDL events until quit is requested.
+func eventLoop(buf *edit.Buffer, font *ttf.Font, win *sdl.Window) {
 	for {
 		switch event := sdl.WaitEvent().(type) {
 		case *sdl.KeyDownEvent:
@@ -24,21 +24,21 @@ func EventLoop(buf *edit.Buffer, font *ttf.Font, win *sdl.Window) {
 			case sdl.K_BACKSPACE:
 				buf.Delete(buf.ShiftIndex(buf.End(), -1), buf.End())
 			case sdl.K_RETURN:
-				TextInput(buf, "\n")
+				textInput(buf, "\n")
 			case sdl.K_TAB:
-				TextInput(buf, "\t")
+				textInput(buf, "\t")
 			case sdl.K_q:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
 					return
 				}
 			}
-			Render <- 1
+			render <- 1
 		case *sdl.QuitEvent:
 			return
 		case *sdl.TextInputEvent:
 			if n := bytes.Index(event.Text[:], []byte{0}); n > 0 {
-				TextInput(buf, string(event.Text[:n]))
-				Render <- 1
+				textInput(buf, string(event.Text[:n]))
+				render <- 1
 			}
 		case *sdl.WindowEvent:
 			switch event.Event {
@@ -51,7 +51,7 @@ func EventLoop(buf *edit.Buffer, font *ttf.Font, win *sdl.Window) {
 				}
 				buf.SetSize(int(event.Data1)/fontWidth,
 					int(event.Data2)/font.Height())
-				Render <- 1
+				render <- 1
 			}
 		}
 	}

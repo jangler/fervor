@@ -8,21 +8,44 @@ import (
 	"github.com/veandco/go-sdl2/sdl_ttf"
 )
 
-var (
-	// Colors for use with FillRect.
-	BgColor uint32 = 0xffe0e0e0
+const padPx = 2 // number of pixels used to pad UI elements
 
-	// Colors for use with ttf functions.
-	BgColorSDL = sdl.Color{0xe0, 0xe0, 0xe0, 0xff}
-	FgColorSDL = sdl.Color{0x20, 0x20, 0x20, 0xff}
+var (
+	// colors for use with FillRect
+	bgColor       uint32 = 0xffffffff
+	statusBgColor uint32 = 0xffe9e9e9
+
+	// colors for use with ttf functions
+	bgColorSDL       = sdl.Color{0xff, 0xff, 0xff, 0xff}
+	fgColorSDL       = sdl.Color{0x22, 0x22, 0x22, 0xff}
+	statusBgColorSDL = sdl.Color{0xe9, 0xe9, 0xe9, 0xff}
 )
 
-// Render is a channel used to communicate with RenderLoop.
-var Render = make(chan int)
+var (
+	render = make(chan int)    // used to signal a redraw of the screen
+	status = make(chan string) // used to update status message
+)
 
-// DrawString draws s to dst at (x, y) using font, and returns x plus the width
+// createWindow returns a new SDL window of appropriate size given font, and
+// titled title.
+func createWindow(title string, font *ttf.Font) *sdl.Window {
+	fontWidth, _, err := font.SizeUTF8("0")
+	if err != nil {
+		log.Fatal(err)
+	}
+	width := fontWidth*80 + padPx*2
+	height := fontWidth*26 + padPx*4
+	win, err := sdl.CreateWindow(title, sdl.WINDOWPOS_UNDEFINED,
+		sdl.WINDOWPOS_UNDEFINED, width, height, sdl.WINDOW_RESIZABLE)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return win
+}
+
+// drawString draws s to dst at (x, y) using font, and returns x plus the width
 // of the text in pixels.
-func DrawString(font *ttf.Font, s string, fg, bg sdl.Color, dst *sdl.Surface,
+func drawString(font *ttf.Font, s string, fg, bg sdl.Color, dst *sdl.Surface,
 	x, y int) int {
 	if s != "" {
 		surf, err := font.RenderUTF8_Shaded(s, fg, bg)
@@ -40,24 +63,48 @@ func DrawString(font *ttf.Font, s string, fg, bg sdl.Color, dst *sdl.Surface,
 	return x
 }
 
-// RenderLoop listens on the Render channel and draws the screen each time a
+// drawStatusLine draws s at the bottom of dst using font.
+func drawStatusLine(dst *sdl.Surface, font *ttf.Font, s string) {
+	bgRect := sdl.Rect{
+		padPx,
+		dst.H - int32(font.Height()) - padPx*3,
+		dst.W - padPx*2,
+		int32(font.Height()) + padPx*2,
+	}
+	dst.FillRect(&bgRect, statusBgColor)
+	drawString(font, s, fgColorSDL, statusBgColorSDL, dst, padPx*2,
+		int(dst.H)-font.Height()-padPx*2)
+}
+
+// renderLoop listens on the render channel and draws the screen each time a
 // value is received.
-func RenderLoop(buf *edit.Buffer, font *ttf.Font, win *sdl.Window) {
-	for range Render {
-		surf, err := win.GetSurface()
-		if err != nil {
-			log.Fatal(err)
-		}
-		surf.FillRect(&sdl.Rect{0, 0, surf.W, surf.H}, BgColor)
-		x, y := 0, 0
-		for _, line := range buf.DisplayLines() {
-			for e := line.Front(); e != nil; e = e.Next() {
-				text := e.Value.(edit.Fragment).Text
-				x = DrawString(font, text, FgColorSDL, BgColorSDL, surf, x, y)
+func renderLoop(buf *edit.Buffer, font *ttf.Font, win *sdl.Window) {
+	var statusText string
+	for {
+		select {
+		case s := <-status:
+			if s != statusText {
+				statusText = s
+				go func() { render <- 1 }()
 			}
-			y += font.Height()
-			x = 0
+		case <-render:
+			surf, err := win.GetSurface()
+			if err != nil {
+				log.Fatal(err)
+			}
+			surf.FillRect(&sdl.Rect{0, 0, surf.W, surf.H}, bgColor)
+			x, y := padPx, padPx
+			for _, line := range buf.DisplayLines() {
+				for e := line.Front(); e != nil; e = e.Next() {
+					text := e.Value.(edit.Fragment).Text
+					x = drawString(font, text, fgColorSDL, bgColorSDL, surf,
+						x, y)
+				}
+				y += font.Height()
+				x = padPx
+			}
+			drawStatusLine(surf, font, statusText)
+			win.UpdateSurface()
 		}
-		win.UpdateSurface()
 	}
 }
