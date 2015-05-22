@@ -97,5 +97,6 @@ func main() {
 	paneSet <- panesCopy
 	w, h := win.GetSize()
 	resize(panes, font, w, h)
+	win.SetSize(w, h) // force correct window size
 	eventLoop(panes, font, win)
 }
