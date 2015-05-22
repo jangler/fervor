@@ -41,6 +41,7 @@ type Pane struct {
 	Title      string
 	TabWidth   int
 	Cols, Rows int
+	Focused    bool
 }
 
 // See ensurees that the mark with ID id is visible on the pane's screen.
@@ -83,17 +84,17 @@ func drawPaneHeader(dst *sdl.Surface, font *ttf.Font, s string, y int) {
 	drawString(font, s, paneFgColorSDL, paneBgColorSDL, dst, padPx, y+padPx)
 }
 
-// drawBuffer draws the displayed contents of buf to dst using font.
-func drawBuffer(buf *edit.Buffer, font *ttf.Font, dst *sdl.Surface, y int) {
+// drawBuffer draws the displayed contents of pane to dst using font.
+func drawBuffer(pane Pane, font *ttf.Font, dst *sdl.Surface, y int) {
 	x := padPx
-	mark, _ := buf.IndexFromMark(insertMark)
-	col, row := buf.CoordsFromIndex(mark)
-	for i, line := range buf.DisplayLines() {
+	mark, _ := pane.IndexFromMark(insertMark)
+	col, row := pane.CoordsFromIndex(mark)
+	for i, line := range pane.DisplayLines() {
 		for e := line.Front(); e != nil; e = e.Next() {
 			text := e.Value.(edit.Fragment).Text
 			x = drawString(font, text, fgColorSDL, bgColorSDL, dst, x, y)
 		}
-		if i == row {
+		if i == row && pane.Focused {
 			dst.FillRect(&sdl.Rect{int32(padPx + fontWidth*col), int32(y),
 				1, int32(font.Height())}, paneFgColor)
 		}
@@ -185,9 +186,11 @@ func bufSize(width, height, n int, font *ttf.Font) (cols, rows int) {
 func renderLoop(font *ttf.Font, win *sdl.Window) {
 	var statusText string
 	panes := make([]Pane, 0)
+	var pane Pane
 	for {
 		select {
 		case panes = <-paneSet:
+			pane = panes[focusedPane(panes)]
 			go func() { render <- 1 }()
 		case <-render:
 			surf, err := win.GetSurface()
@@ -198,10 +201,9 @@ func renderLoop(font *ttf.Font, win *sdl.Window) {
 			ps := paneSpace(int(surf.H), len(panes), font)
 			for i, pane := range panes {
 				drawPaneHeader(surf, font, pane.Title, ps*i)
-				drawBuffer(pane.Buffer, font, surf,
-					ps*i+font.Height()+padPx*3)
+				drawBuffer(pane, font, surf, ps*i+font.Height()+padPx*3)
 			}
-			drawStatusLine(surf, font, statusText, panes[0])
+			drawStatusLine(surf, font, statusText, pane)
 			win.UpdateSurface()
 		case s := <-status:
 			if s != statusText {

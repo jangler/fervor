@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"log"
 	"regexp"
 
 	"github.com/jangler/edit"
@@ -14,6 +15,44 @@ var (
 	wordRegexp  = regexp.MustCompile(`\w`) // matches word characters
 )
 
+// focusedPane returns the focused pane index out of a slice of panes.
+func focusedPane(panes []Pane) int {
+	for i, pane := range panes {
+		if pane.Focused {
+			return i
+		}
+	}
+	log.Fatal("No focused pane")
+	return 0 // unreachable
+}
+
+// change pane focus based on mouse position
+func refocus(panes []Pane, win *sdl.Window, font *ttf.Font, x, y int) {
+	_, height := win.GetSize()
+	ps := paneSpace(height, len(panes), font)
+	i := y / ps
+	if i < len(panes) {
+		for j := range panes {
+			panes[j].Focused = false
+		}
+		panes[i].Focused = true
+	}
+}
+
+// singleClick processes a single left mouse click at the given coordinates.
+func singleClick(panes []Pane, win *sdl.Window, font *ttf.Font, x, y int) {
+	_, height := win.GetSize()
+	ps := paneSpace(height, len(panes), font)
+	i := y / ps                        // clicked pane index
+	y = y%ps - font.Height() - padPx*3 // subtract pane header
+	x -= padPx - fontWidth/2
+	y /= font.Height()
+	x /= fontWidth
+	if i < len(panes) {
+		panes[i].Mark(panes[i].IndexFromCoords(x, y), insertMark)
+	}
+}
+
 // textInput inserts text into the focus, or performs another action depending
 // on the contents of the string.
 func textInput(buf *edit.Buffer, s string) {
@@ -24,9 +63,9 @@ func textInput(buf *edit.Buffer, s string) {
 // resize resizes the panes in the display and requests a render.
 func resize(panes []Pane, font *ttf.Font, width, height int) {
 	cols, rows := bufSize(width, height, len(panes), font)
-	for _, pane := range panes {
-		pane.Cols, pane.Rows = cols, rows
-		pane.SetSize(cols, rows)
+	for i := range panes {
+		panes[i].Cols, panes[i].Rows = cols, rows
+		panes[i].SetSize(cols, rows)
 	}
 	render <- 1
 }
@@ -66,7 +105,7 @@ func (p *Pane) ShiftIndexByWord(index edit.Index, n int) edit.Index {
 
 // eventLoop handles SDL events until quit is requested.
 func eventLoop(panes []Pane, font *ttf.Font, win *sdl.Window) {
-	pane := panes[0]
+	pane := panes[focusedPane(panes)]
 	for {
 		switch event := sdl.WaitEvent().(type) {
 		case *sdl.KeyDownEvent:
@@ -141,6 +180,20 @@ func eventLoop(panes []Pane, font *ttf.Font, win *sdl.Window) {
 				}
 			}
 			pane.See(insertMark)
+			render <- 1
+		case *sdl.MouseButtonEvent:
+			if event.Type == sdl.MOUSEBUTTONDOWN &&
+				event.Button == sdl.BUTTON_LEFT {
+				singleClick(panes, win, font, int(event.X), int(event.Y))
+				pane = panes[focusedPane(panes)]
+				paneSet <- panes
+			}
+		case *sdl.MouseMotionEvent:
+			refocus(panes, win, font, int(event.X), int(event.Y))
+			pane = panes[focusedPane(panes)]
+			paneSet <- panes
+		case *sdl.MouseWheelEvent:
+			pane.Scroll(int(event.Y) * -3)
 			render <- 1
 		case *sdl.QuitEvent:
 			return

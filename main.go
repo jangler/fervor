@@ -83,11 +83,12 @@ func main() {
 				status <- fmt.Sprintf(`Opened "%s".`, arg)
 			}()
 			buf.SetTabWidth(4)
-			panes = append(panes, Pane{buf, arg, 4, 80, 25})
+			panes = append(panes, Pane{buf, arg, 4, 80, 25, false})
 		} else {
 			go func() { status <- err.Error() }()
 		}
 	}
+	panes[0].Focused = true
 
 	go renderLoop(font, win)
 	paneSet <- panes
