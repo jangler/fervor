@@ -2,10 +2,16 @@ package main
 
 import (
 	"bytes"
+	"regexp"
 
 	"github.com/jangler/edit"
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/sdl_ttf"
+)
+
+var (
+	spaceRegexp = regexp.MustCompile(`\s`) // matches whitespace characters
+	wordRegexp  = regexp.MustCompile(`\w`) // matches word characters
 )
 
 // textInput inserts text into the focus, or performs another action depending
@@ -23,6 +29,39 @@ func resize(panes []Pane, font *ttf.Font, width, height int) {
 		pane.SetSize(cols, rows)
 	}
 	render <- 1
+}
+
+// ShiftIndexByWord returns the given index shifted forward by n words. A
+// negative value for n will shift backwards.
+func (p *Pane) ShiftIndexByWord(index edit.Index, n int) edit.Index {
+	for n > 0 {
+		// TODO
+		n--
+	}
+	for n < 0 {
+		if index.Char == 0 {
+			index = p.ShiftIndex(index, -1)
+		} else {
+			text := []rune(p.Get(edit.Index{index.Line, 0}, index))
+			i := len(text) - 1
+			for i >= 0 && spaceRegexp.MatchString(string(text[i])) {
+				i--
+			}
+			if i >= 0 && wordRegexp.MatchString(string(text[i])) {
+				for i >= 0 && wordRegexp.MatchString(string(text[i])) {
+					i--
+				}
+			} else {
+				for i >= 0 && !wordRegexp.MatchString(string(text[i])) &&
+					!spaceRegexp.MatchString(string(text[i])) {
+					i--
+				}
+			}
+			index.Char = i + 1
+		}
+		n++
+	}
+	return index
 }
 
 // eventLoop handles SDL events until quit is requested.
@@ -70,9 +109,35 @@ func eventLoop(panes []Pane, font *ttf.Font, win *sdl.Window) {
 				index, _ := pane.IndexFromMark(insertMark)
 				col, row := pane.CoordsFromIndex(index)
 				pane.Mark(pane.IndexFromCoords(col, row-1), insertMark)
+			case sdl.K_a:
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+					index, _ := pane.IndexFromMark(insertMark)
+					pane.Mark(edit.Index{index.Line, 0}, insertMark)
+				}
+			case sdl.K_e:
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+					index, _ := pane.IndexFromMark(insertMark)
+					pane.Mark(edit.Index{index.Line, 0xffff}, insertMark)
+				}
+			case sdl.K_h:
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+					index, _ := pane.IndexFromMark(insertMark)
+					pane.Delete(pane.ShiftIndex(index, -1), index)
+				}
 			case sdl.K_q:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
 					return
+				}
+			case sdl.K_u:
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+					index, _ := pane.IndexFromMark(insertMark)
+					pane.Delete(edit.Index{index.Line, 0}, index)
+				}
+			case sdl.K_w:
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+					end, _ := pane.IndexFromMark(insertMark)
+					begin := pane.ShiftIndexByWord(end, -1)
+					pane.Delete(begin, end)
 				}
 			}
 			pane.See(insertMark)
