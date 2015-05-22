@@ -79,8 +79,9 @@ func main() {
 	}
 	for _, arg := range args {
 		if buf, err := openFile(arg); err == nil {
+			statusStr := fmt.Sprintf(`Opened "%s".`, arg)
 			go func() {
-				status <- fmt.Sprintf(`Opened "%s".`, arg)
+				status <- statusStr
 			}()
 			buf.SetTabWidth(4)
 			panes = append(panes, Pane{buf, arg, 4, 80, 25, false})
@@ -91,7 +92,9 @@ func main() {
 	panes[0].Focused = true
 
 	go renderLoop(font, win)
-	paneSet <- panes
+	panesCopy := make([]Pane, len(panes))
+	copy(panesCopy, panes)
+	paneSet <- panesCopy
 	w, h := win.GetSize()
 	resize(panes, font, w, h)
 	eventLoop(panes, font, win)

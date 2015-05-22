@@ -203,13 +203,25 @@ func eventLoop(panes []Pane, font *ttf.Font, win *sdl.Window) {
 			if event.Type == sdl.MOUSEBUTTONDOWN &&
 				event.Button == sdl.BUTTON_LEFT {
 				singleClick(panes, win, font, int(event.X), int(event.Y))
+				prevPane := pane
 				pane = panes[focusedPane(panes)]
-				paneSet <- panes
+				if prevPane != pane {
+					panesCopy := make([]Pane, len(panes))
+					copy(panesCopy, panes)
+					paneSet <- panesCopy
+				} else {
+					render <- 1
+				}
 			}
 		case *sdl.MouseMotionEvent:
 			refocus(panes, win, font, int(event.X), int(event.Y))
+			prevPane := pane
 			pane = panes[focusedPane(panes)]
-			paneSet <- panes
+			if prevPane != pane {
+				paneFocus <- focusedPane(panes)
+			} else {
+				render <- 1
+			}
 		case *sdl.MouseWheelEvent:
 			pane.Scroll(int(event.Y) * -3)
 			render <- 1

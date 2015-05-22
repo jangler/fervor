@@ -30,7 +30,8 @@ var (
 	render = make(chan int)    // used to signal a redraw of the screen
 	status = make(chan string) // used to update status message
 
-	paneSet = make(chan []Pane) // used to update pane list
+	paneFocus = make(chan int)    // used to update focused pane
+	paneSet   = make(chan []Pane) // used to update pane list
 )
 
 var fontWidth int
@@ -189,6 +190,13 @@ func renderLoop(font *ttf.Font, win *sdl.Window) {
 	var pane Pane
 	for {
 		select {
+		case i := <-paneFocus:
+			for j := range panes {
+				panes[j].Focused = false
+			}
+			panes[i].Focused = true
+			pane = panes[i]
+			go func() { render <- 1 }()
 		case panes = <-paneSet:
 			pane = panes[focusedPane(panes)]
 			go func() { render <- 1 }()
