@@ -35,13 +35,30 @@ func eventLoop(panes []Pane, font *ttf.Font, win *sdl.Window) {
 			case sdl.K_BACKSPACE:
 				index, _ := pane.IndexFromMark(insertMark)
 				pane.Delete(pane.ShiftIndex(index, -1), index)
+			case sdl.K_DELETE:
+				index, _ := pane.IndexFromMark(insertMark)
+				pane.Delete(index, pane.ShiftIndex(index, 1))
 			case sdl.K_DOWN:
 				index, _ := pane.IndexFromMark(insertMark)
 				col, row := pane.CoordsFromIndex(index)
 				pane.Mark(pane.IndexFromCoords(col, row+1), insertMark)
+			case sdl.K_END:
+				index, _ := pane.IndexFromMark(insertMark)
+				pane.Mark(edit.Index{index.Line, 0xffff}, insertMark)
 			case sdl.K_LEFT:
 				index, _ := pane.IndexFromMark(insertMark)
 				pane.Mark(pane.ShiftIndex(index, -1), insertMark)
+			case sdl.K_HOME:
+				index, _ := pane.IndexFromMark(insertMark)
+				pane.Mark(edit.Index{index.Line, 0}, insertMark)
+			case sdl.K_PAGEDOWN:
+				index, _ := pane.IndexFromMark(insertMark)
+				col, row := pane.CoordsFromIndex(index)
+				pane.Mark(pane.IndexFromCoords(col, row+pane.Rows), insertMark)
+			case sdl.K_PAGEUP:
+				index, _ := pane.IndexFromMark(insertMark)
+				col, row := pane.CoordsFromIndex(index)
+				pane.Mark(pane.IndexFromCoords(col, row-pane.Rows), insertMark)
 			case sdl.K_RETURN:
 				textInput(pane.Buffer, "\n")
 			case sdl.K_RIGHT:
