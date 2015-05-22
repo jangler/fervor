@@ -57,6 +57,24 @@ func singleClick(panes []Pane, win *sdl.Window, font *ttf.Font, x, y int) {
 // on the contents of the string.
 func textInput(buf *edit.Buffer, s string) {
 	index, _ := buf.IndexFromMark(insertMark)
+	if s == "\n" {
+		// autoindent
+		indent := buf.Get(edit.Index{index.Line, 0},
+			edit.Index{index.Line, 0xffff})
+		i := 0
+		for i < len(indent) && (indent[i] == ' ' || indent[i] == '\t') {
+			i++
+		}
+		if i <= index.Char {
+			s += indent[:i]
+
+			// delete lines containing only whitespace
+			if i == len(indent) {
+				buf.Delete(edit.Index{index.Line, 0}, index)
+				index.Char = 0
+			}
+		}
+	}
 	buf.Insert(index, s)
 }
 
