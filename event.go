@@ -122,64 +122,64 @@ func (p *Pane) ShiftIndexByWord(index edit.Index, n int) edit.Index {
 
 // eventLoop handles SDL events until quit is requested.
 func eventLoop(panes []*Pane, status string, font *ttf.Font, win *sdl.Window) {
-	pane := panes[focusedPane(panes)]
-	rc := &RenderContext{panes, pane, status, font, win}
+	rc := &RenderContext{panes, panes[focusedPane(panes)], status, font, win}
 	for {
 		switch event := sdl.WaitEvent().(type) {
 		case *sdl.KeyDownEvent:
 			switch event.Keysym.Sym {
 			case sdl.K_BACKSPACE:
-				index, _ := pane.IndexFromMark(insertMark)
-				pane.Delete(pane.ShiftIndex(index, -1), index)
+				index, _ := rc.Focus.IndexFromMark(insertMark)
+				rc.Focus.Delete(rc.Focus.ShiftIndex(index, -1), index)
 			case sdl.K_DELETE:
-				index, _ := pane.IndexFromMark(insertMark)
-				pane.Delete(index, pane.ShiftIndex(index, 1))
+				index, _ := rc.Focus.IndexFromMark(insertMark)
+				rc.Focus.Delete(index, rc.Focus.ShiftIndex(index, 1))
 			case sdl.K_DOWN:
-				index, _ := pane.IndexFromMark(insertMark)
-				col, row := pane.CoordsFromIndex(index)
-				pane.Mark(pane.IndexFromCoords(col, row+1), insertMark)
+				index, _ := rc.Focus.IndexFromMark(insertMark)
+				col, row := rc.Focus.CoordsFromIndex(index)
+				rc.Focus.Mark(rc.Focus.IndexFromCoords(col, row+1), insertMark)
 			case sdl.K_END:
-				index, _ := pane.IndexFromMark(insertMark)
-				pane.Mark(edit.Index{index.Line, 0xffff}, insertMark)
+				index, _ := rc.Focus.IndexFromMark(insertMark)
+				rc.Focus.Mark(edit.Index{index.Line, 0xffff}, insertMark)
 			case sdl.K_LEFT:
-				index, _ := pane.IndexFromMark(insertMark)
-				pane.Mark(pane.ShiftIndex(index, -1), insertMark)
+				index, _ := rc.Focus.IndexFromMark(insertMark)
+				rc.Focus.Mark(rc.Focus.ShiftIndex(index, -1), insertMark)
 			case sdl.K_HOME:
-				index, _ := pane.IndexFromMark(insertMark)
-				pane.Mark(edit.Index{index.Line, 0}, insertMark)
+				index, _ := rc.Focus.IndexFromMark(insertMark)
+				rc.Focus.Mark(edit.Index{index.Line, 0}, insertMark)
 			case sdl.K_PAGEDOWN:
-				index, _ := pane.IndexFromMark(insertMark)
-				col, row := pane.CoordsFromIndex(index)
-				pane.Mark(pane.IndexFromCoords(col, row+pane.Rows), insertMark)
+				index, _ := rc.Focus.IndexFromMark(insertMark)
+				col, row := rc.Focus.CoordsFromIndex(index)
+				rc.Focus.Mark(rc.Focus.IndexFromCoords(col, row+rc.Focus.Rows),
+					insertMark)
 			case sdl.K_PAGEUP:
-				index, _ := pane.IndexFromMark(insertMark)
-				col, row := pane.CoordsFromIndex(index)
-				pane.Mark(pane.IndexFromCoords(col, row-pane.Rows), insertMark)
+				index, _ := rc.Focus.IndexFromMark(insertMark)
+				col, row := rc.Focus.CoordsFromIndex(index)
+				rc.Focus.Mark(rc.Focus.IndexFromCoords(col, row-rc.Focus.Rows), insertMark)
 			case sdl.K_RETURN:
-				textInput(pane.Buffer, "\n")
+				textInput(rc.Focus.Buffer, "\n")
 			case sdl.K_RIGHT:
-				index, _ := pane.IndexFromMark(insertMark)
-				pane.Mark(pane.ShiftIndex(index, 1), insertMark)
+				index, _ := rc.Focus.IndexFromMark(insertMark)
+				rc.Focus.Mark(rc.Focus.ShiftIndex(index, 1), insertMark)
 			case sdl.K_TAB:
-				textInput(pane.Buffer, "\t")
+				textInput(rc.Focus.Buffer, "\t")
 			case sdl.K_UP:
-				index, _ := pane.IndexFromMark(insertMark)
-				col, row := pane.CoordsFromIndex(index)
-				pane.Mark(pane.IndexFromCoords(col, row-1), insertMark)
+				index, _ := rc.Focus.IndexFromMark(insertMark)
+				col, row := rc.Focus.CoordsFromIndex(index)
+				rc.Focus.Mark(rc.Focus.IndexFromCoords(col, row-1), insertMark)
 			case sdl.K_a:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
-					index, _ := pane.IndexFromMark(insertMark)
-					pane.Mark(edit.Index{index.Line, 0}, insertMark)
+					index, _ := rc.Focus.IndexFromMark(insertMark)
+					rc.Focus.Mark(edit.Index{index.Line, 0}, insertMark)
 				}
 			case sdl.K_e:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
-					index, _ := pane.IndexFromMark(insertMark)
-					pane.Mark(edit.Index{index.Line, 0xffff}, insertMark)
+					index, _ := rc.Focus.IndexFromMark(insertMark)
+					rc.Focus.Mark(edit.Index{index.Line, 0xffff}, insertMark)
 				}
 			case sdl.K_h:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
-					index, _ := pane.IndexFromMark(insertMark)
-					pane.Delete(pane.ShiftIndex(index, -1), index)
+					index, _ := rc.Focus.IndexFromMark(insertMark)
+					rc.Focus.Delete(rc.Focus.ShiftIndex(index, -1), index)
 				}
 			case sdl.K_q:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
@@ -187,37 +187,37 @@ func eventLoop(panes []*Pane, status string, font *ttf.Font, win *sdl.Window) {
 				}
 			case sdl.K_u:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
-					index, _ := pane.IndexFromMark(insertMark)
-					pane.Delete(edit.Index{index.Line, 0}, index)
+					index, _ := rc.Focus.IndexFromMark(insertMark)
+					rc.Focus.Delete(edit.Index{index.Line, 0}, index)
 				}
 			case sdl.K_w:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
-					end, _ := pane.IndexFromMark(insertMark)
-					begin := pane.ShiftIndexByWord(end, -1)
-					pane.Delete(begin, end)
+					end, _ := rc.Focus.IndexFromMark(insertMark)
+					begin := rc.Focus.ShiftIndexByWord(end, -1)
+					rc.Focus.Delete(begin, end)
 				}
 			}
-			pane.See(insertMark)
+			rc.Focus.See(insertMark)
 			render(rc)
 		case *sdl.MouseButtonEvent:
 			if event.Type == sdl.MOUSEBUTTONDOWN &&
 				event.Button == sdl.BUTTON_LEFT {
 				singleClick(panes, win, font, int(event.X), int(event.Y))
-				pane = panes[focusedPane(panes)]
+				rc.Focus = panes[focusedPane(panes)]
 				render(rc)
 			}
 		case *sdl.MouseMotionEvent:
 			refocus(panes, win, font, int(event.X), int(event.Y))
-			pane = panes[focusedPane(panes)]
+			rc.Focus = panes[focusedPane(panes)]
 			render(rc)
 		case *sdl.MouseWheelEvent:
-			pane.Scroll(int(event.Y) * -3)
+			rc.Focus.Scroll(int(event.Y) * -3)
 			render(rc)
 		case *sdl.QuitEvent:
 			return
 		case *sdl.TextInputEvent:
 			if n := bytes.Index(event.Text[:], []byte{0}); n > 0 {
-				textInput(pane.Buffer, string(event.Text[:n]))
+				textInput(rc.Focus.Buffer, string(event.Text[:n]))
 				render(rc)
 			}
 		case *sdl.WindowEvent:
