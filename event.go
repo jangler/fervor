@@ -16,7 +16,7 @@ var (
 )
 
 // focusedPane returns the focused pane index out of a slice of panes.
-func focusedPane(panes []Pane) int {
+func focusedPane(panes []*Pane) int {
 	for i, pane := range panes {
 		if pane.Focused {
 			return i
@@ -27,7 +27,7 @@ func focusedPane(panes []Pane) int {
 }
 
 // change pane focus based on mouse position
-func refocus(panes []Pane, win *sdl.Window, font *ttf.Font, x, y int) {
+func refocus(panes []*Pane, win *sdl.Window, font *ttf.Font, x, y int) {
 	_, height := win.GetSize()
 	ps := paneSpace(height, len(panes), font)
 	i := y / ps
@@ -40,7 +40,7 @@ func refocus(panes []Pane, win *sdl.Window, font *ttf.Font, x, y int) {
 }
 
 // singleClick processes a single left mouse click at the given coordinates.
-func singleClick(panes []Pane, win *sdl.Window, font *ttf.Font, x, y int) {
+func singleClick(panes []*Pane, win *sdl.Window, font *ttf.Font, x, y int) {
 	_, height := win.GetSize()
 	ps := paneSpace(height, len(panes), font)
 	i := y / ps                        // clicked pane index
@@ -78,14 +78,13 @@ func textInput(buf *edit.Buffer, s string) {
 	buf.Insert(index, s)
 }
 
-// resize resizes the panes in the display and requests a render.
-func resize(panes []Pane, font *ttf.Font, width, height int) {
+// resize resizes the panes in the display
+func resize(panes []*Pane, font *ttf.Font, width, height int) {
 	cols, rows := bufSize(width, height, len(panes), font)
 	for i := range panes {
 		panes[i].Cols, panes[i].Rows = cols, rows
 		panes[i].SetSize(cols, rows)
 	}
-	render <- 1
 }
 
 // ShiftIndexByWord returns the given index shifted forward by n words. A
@@ -122,8 +121,9 @@ func (p *Pane) ShiftIndexByWord(index edit.Index, n int) edit.Index {
 }
 
 // eventLoop handles SDL events until quit is requested.
-func eventLoop(panes []Pane, font *ttf.Font, win *sdl.Window) {
+func eventLoop(panes []*Pane, status string, font *ttf.Font, win *sdl.Window) {
 	pane := panes[focusedPane(panes)]
+	rc := &RenderContext{panes, pane, status, font, win}
 	for {
 		switch event := sdl.WaitEvent().(type) {
 		case *sdl.KeyDownEvent:
@@ -198,39 +198,27 @@ func eventLoop(panes []Pane, font *ttf.Font, win *sdl.Window) {
 				}
 			}
 			pane.See(insertMark)
-			render <- 1
+			render(rc)
 		case *sdl.MouseButtonEvent:
 			if event.Type == sdl.MOUSEBUTTONDOWN &&
 				event.Button == sdl.BUTTON_LEFT {
 				singleClick(panes, win, font, int(event.X), int(event.Y))
-				prevPane := pane
 				pane = panes[focusedPane(panes)]
-				if prevPane != pane {
-					panesCopy := make([]Pane, len(panes))
-					copy(panesCopy, panes)
-					paneSet <- panesCopy
-				} else {
-					render <- 1
-				}
+				render(rc)
 			}
 		case *sdl.MouseMotionEvent:
 			refocus(panes, win, font, int(event.X), int(event.Y))
-			prevPane := pane
 			pane = panes[focusedPane(panes)]
-			if prevPane != pane {
-				paneFocus <- focusedPane(panes)
-			} else {
-				render <- 1
-			}
+			render(rc)
 		case *sdl.MouseWheelEvent:
 			pane.Scroll(int(event.Y) * -3)
-			render <- 1
+			render(rc)
 		case *sdl.QuitEvent:
 			return
 		case *sdl.TextInputEvent:
 			if n := bytes.Index(event.Text[:], []byte{0}); n > 0 {
 				textInput(pane.Buffer, string(event.Text[:n]))
-				render <- 1
+				render(rc)
 			}
 		case *sdl.WindowEvent:
 			switch event.Event {
@@ -238,6 +226,7 @@ func eventLoop(panes []Pane, font *ttf.Font, win *sdl.Window) {
 				win.UpdateSurface()
 			case sdl.WINDOWEVENT_RESIZED:
 				resize(panes, font, int(event.Data1), int(event.Data2))
+				render(rc)
 			}
 		}
 	}

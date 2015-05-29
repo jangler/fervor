@@ -26,14 +26,6 @@ var (
 	statusBgColorSDL = sdl.Color{0xe9, 0xe9, 0xe9, 0xff}
 )
 
-var (
-	render = make(chan int)    // used to signal a redraw of the screen
-	status = make(chan string) // used to update status message
-
-	paneFocus = make(chan int)    // used to update focused pane
-	paneSet   = make(chan []Pane) // used to update pane list
-)
-
 var fontWidth int
 
 // Pane is a buffer with associated metadata.
@@ -86,7 +78,7 @@ func drawPaneHeader(dst *sdl.Surface, font *ttf.Font, s string, y int) {
 }
 
 // drawBuffer draws the displayed contents of pane to dst using font.
-func drawBuffer(pane Pane, font *ttf.Font, dst *sdl.Surface, y int) {
+func drawBuffer(pane *Pane, font *ttf.Font, dst *sdl.Surface, y int) {
 	x := padPx
 	mark, _ := pane.IndexFromMark(insertMark)
 	col, row := pane.CoordsFromIndex(mark)
@@ -125,7 +117,7 @@ func drawString(font *ttf.Font, s string, fg, bg sdl.Color, dst *sdl.Surface,
 }
 
 // drawStatusLine draws s at the bottom of dst using font.
-func drawStatusLine(dst *sdl.Surface, font *ttf.Font, s string, pane Pane) {
+func drawStatusLine(dst *sdl.Surface, font *ttf.Font, s string, pane *Pane) {
 	// draw background
 	bgRect := sdl.Rect{
 		0,
@@ -182,42 +174,27 @@ func bufSize(width, height, n int, font *ttf.Font) (cols, rows int) {
 	return
 }
 
-// renderLoop listens on the render channel and draws the screen each time a
-// value is received.
-func renderLoop(font *ttf.Font, win *sdl.Window) {
-	var statusText string
-	panes := make([]Pane, 0)
-	var pane Pane
-	for {
-		select {
-		case i := <-paneFocus:
-			for j := range panes {
-				panes[j].Focused = false
-			}
-			panes[i].Focused = true
-			pane = panes[i]
-			go func() { render <- 1 }()
-		case panes = <-paneSet:
-			pane = panes[focusedPane(panes)]
-			go func() { render <- 1 }()
-		case <-render:
-			surf, err := win.GetSurface()
-			if err != nil {
-				log.Fatal(err)
-			}
-			surf.FillRect(&sdl.Rect{0, 0, surf.W, surf.H}, bgColor)
-			ps := paneSpace(int(surf.H), len(panes), font)
-			for i, pane := range panes {
-				drawPaneHeader(surf, font, pane.Title, ps*i)
-				drawBuffer(pane, font, surf, ps*i+font.Height()+padPx*3)
-			}
-			drawStatusLine(surf, font, statusText, pane)
-			win.UpdateSurface()
-		case s := <-status:
-			if s != statusText {
-				statusText = s
-				go func() { render <- 1 }()
-			}
-		}
+// RenderContext contains information needed to update the display.
+type RenderContext struct {
+	Panes  []*Pane
+	Focus  *Pane
+	Status string
+	Font   *ttf.Font
+	Window *sdl.Window
+}
+
+// render updates the display.
+func render(rc *RenderContext) {
+	surf, err := rc.Window.GetSurface()
+	if err != nil {
+		log.Fatal(err)
 	}
+	surf.FillRect(&sdl.Rect{0, 0, surf.W, surf.H}, bgColor)
+	ps := paneSpace(int(surf.H), len(rc.Panes), rc.Font)
+	for i, pane := range rc.Panes {
+		drawPaneHeader(surf, rc.Font, pane.Title, ps*i)
+		drawBuffer(pane, rc.Font, surf, ps*i+rc.Font.Height()+padPx*3)
+	}
+	drawStatusLine(surf, rc.Font, rc.Status, rc.Focus)
+	rc.Window.UpdateSurface()
 }

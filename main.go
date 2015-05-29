@@ -72,31 +72,25 @@ func main() {
 	win := createWindow(os.Args[0], font)
 	defer win.Destroy()
 
-	panes := make([]Pane, 0)
+	panes := make([]*Pane, 0)
 	args := flag.Args()
+	var status string
 	if len(args) == 0 {
 		args = []string{os.DevNull}
 	}
 	for _, arg := range args {
 		if buf, err := openFile(arg); err == nil {
-			statusStr := fmt.Sprintf(`Opened "%s".`, arg)
-			go func() {
-				status <- statusStr
-			}()
+			status = fmt.Sprintf(`Opened "%s".`, arg)
 			buf.SetTabWidth(4)
-			panes = append(panes, Pane{buf, arg, 4, 80, 25, false})
+			panes = append(panes, &Pane{buf, arg, 4, 80, 25, false})
 		} else {
-			go func() { status <- err.Error() }()
+			status = err.Error()
 		}
 	}
 	panes[0].Focused = true
 
-	go renderLoop(font, win)
-	panesCopy := make([]Pane, len(panes))
-	copy(panesCopy, panes)
-	paneSet <- panesCopy
 	w, h := win.GetSize()
 	resize(panes, font, w, h)
 	win.SetSize(w, h) // force correct window size
-	eventLoop(panes, font, win)
+	eventLoop(panes, status, font, win)
 }
