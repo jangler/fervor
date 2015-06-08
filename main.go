@@ -34,10 +34,14 @@ func getFont() *ttf.Font {
 // initFlag processes command-line flags and arguments.
 func initFlag() {
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [<file> ...]\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [<file>]\n", os.Args[0])
 		flag.PrintDefaults()
 	}
 	flag.Parse()
+	if flag.NArg() > 1 {
+		flag.Usage()
+		os.Exit(1)
+	}
 }
 
 // openFile attempts to open the file given by path and return a new buffer
@@ -50,7 +54,6 @@ func openFile(path string) (*edit.Buffer, error) {
 	}
 	buf := edit.NewBuffer()
 	buf.Insert(buf.End(), string(contents))
-	buf.Mark(edit.Index{1, 0}, insertMark)
 	return buf, nil
 }
 
@@ -82,23 +85,24 @@ func main() {
 	}
 
 	var pane *Pane
-	args := flag.Args()
-	var status string
-	if len(args) == 0 {
-		args = []string{os.DevNull}
+	var arg, status string
+	if flag.NArg() == 0 {
+		arg = os.DevNull
+	} else {
+		arg = flag.Arg(0)
 	}
-	for _, arg := range args {
-		if buf, err := openFile(arg); err == nil {
-			status = fmt.Sprintf(`Opened "%s".`, arg)
-			buf.SetTabWidth(4)
-			pane = &Pane{buf, arg, 4, 80, 25}
-			pane.SetSyntax()
-		} else {
-			status = err.Error()
-		}
+	if buf, err := openFile(arg); err == nil {
+		status = fmt.Sprintf(`Opened "%s".`, arg)
+		pane = &Pane{buf, arg, 4, 80, 25}
+	} else {
+		status = fmt.Sprintf(`New file: "%s".`, arg)
+		pane = &Pane{edit.NewBuffer(), arg, 4, 80, 25}
 	}
+	pane.SetTabWidth(4)
+	pane.SetSyntax()
+	pane.Mark(edit.Index{1, 0}, insertMark)
 
-	win := createWindow(args[0], font)
+	win := createWindow(arg, font)
 	defer win.Destroy()
 
 	w, h := win.GetSize()

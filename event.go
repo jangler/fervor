@@ -116,16 +116,16 @@ func (rc *RenderContext) EnterInput() {
 	input := rc.Input.Get(edit.Index{1, 0}, rc.Input.End())
 	switch rc.Status {
 	case openPrompt:
+		rc.Pane.Delete(edit.Index{1, 0}, rc.Pane.End())
 		if contents, err := ioutil.ReadFile(input); err == nil {
-			rc.Pane.Delete(edit.Index{1, 0}, rc.Pane.End())
 			rc.Pane.Insert(edit.Index{1, 0}, string(contents))
 			rc.Status = fmt.Sprintf(`Opened "%s".`, input)
-			rc.Pane.Mark(edit.Index{1, 0}, insertMark)
-			rc.Pane.Title = input
-			rc.Pane.SetSyntax()
 		} else {
-			rc.Status = err.Error()
+			rc.Status = fmt.Sprintf(`New file: "%s".`, input)
 		}
+		rc.Pane.Mark(edit.Index{1, 0}, insertMark)
+		rc.Pane.Title = input
+		rc.Pane.SetSyntax()
 	}
 	rc.Focus = rc.Pane.Buffer
 }
