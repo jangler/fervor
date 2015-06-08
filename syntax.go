@@ -31,4 +31,9 @@ var (
 		mustCompile(`\b\d+\b`, literalId),
 		mustCompile(`\bnil\b`, literalId),
 	}
+	jsonRules = []edit.Rule{
+		mustCompile(`"([^"]|\\")*?":`, keywordId),
+		mustCompile(`"([^"]|\\")*?"`, literalId),
+		mustCompile(`\b(\d*\.)?\d+\b`, literalId),
+	}
 )
