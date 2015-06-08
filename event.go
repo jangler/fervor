@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"regexp"
+	"time"
 
 	"github.com/jangler/edit"
 	"github.com/veandco/go-sdl2/sdl"
@@ -20,8 +21,8 @@ var (
 	wordRegexp  = regexp.MustCompile(`\w`) // matches word characters
 )
 
-// singleClick processes a single left mouse click at the given coordinates.
-func singleClick(pane *Pane, win *sdl.Window, font *ttf.Font, x, y int,
+// click processes a left mouse click at the given coordinates.
+func click(pane *Pane, win *sdl.Window, font *ttf.Font, x, y, times int,
 	shift bool) {
 	_, height := win.GetSize()
 	ps := paneSpace(height, 1, font)
@@ -29,9 +30,29 @@ func singleClick(pane *Pane, win *sdl.Window, font *ttf.Font, x, y int,
 	x -= padPx - fontWidth/2
 	y /= font.Height()
 	x /= fontWidth
-	pane.Mark(pane.IndexFromCoords(x, y), insertMark)
-	if !shift {
-		pane.Mark(pane.IndexFromMark(insertMark), selMark)
+	switch times {
+	case 1: // place cursor
+		pane.Mark(pane.IndexFromCoords(x, y), insertMark)
+		if !shift {
+			pane.Mark(pane.IndexFromMark(insertMark), selMark)
+		}
+	case 2: // select word
+		selIndex := pane.IndexFromCoords(x, y)
+		insertIndex := selIndex
+		for wordRegexp.MatchString(pane.Get(pane.ShiftIndex(selIndex, -1),
+			selIndex)) {
+			selIndex = pane.ShiftIndex(selIndex, -1)
+		}
+		for wordRegexp.MatchString(pane.Get(insertIndex,
+			pane.ShiftIndex(insertIndex, 1))) {
+			insertIndex = pane.ShiftIndex(insertIndex, 1)
+		}
+		pane.Mark(selIndex, selMark)
+		pane.Mark(insertIndex, insertMark)
+	case 3: // select line
+		index := pane.IndexFromCoords(x, y)
+		pane.Mark(edit.Index{index.Line, 0}, selMark)
+		pane.Mark(edit.Index{index.Line, 2 << 30}, insertMark)
 	}
 }
 
@@ -159,6 +180,8 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 	render(rc)
 	w, h := win.GetSize()
 	win.SetSize(w, h)
+	clickCount := 0
+	lastClick := time.Now()
 	for {
 		switch event := sdl.WaitEvent().(type) {
 		case *sdl.KeyDownEvent:
@@ -328,14 +351,20 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 			if event.Type == sdl.MOUSEBUTTONDOWN &&
 				event.Button == sdl.BUTTON_LEFT {
 				state := sdl.GetKeyboardState()
-				singleClick(rc.Pane, win, font, int(event.X), int(event.Y),
+				if time.Since(lastClick) < time.Second/4 {
+					clickCount = clickCount%3 + 1
+				} else {
+					clickCount = 1
+				}
+				lastClick = time.Now()
+				click(rc.Pane, win, font, int(event.X), int(event.Y),
+					clickCount,
 					state[sdl.SCANCODE_LSHIFT]|state[sdl.SCANCODE_RSHIFT] != 0)
 				render(rc)
 			}
 		case *sdl.MouseMotionEvent:
 			if event.State == sdl.ButtonLMask() {
-				singleClick(rc.Pane, win, font, int(event.X), int(event.Y),
-					true)
+				click(rc.Pane, win, font, int(event.X), int(event.Y), 1, true)
 				render(rc)
 			}
 		case *sdl.MouseWheelEvent:
