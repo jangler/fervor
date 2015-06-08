@@ -56,12 +56,12 @@ func click(pane *Pane, win *sdl.Window, font *ttf.Font, x, y, times int,
 	}
 }
 
-// deleteSelection deletes the text between start to end in b.
-func deleteSelection(b *edit.Buffer, start, end edit.Index) {
-	if end.Less(start) {
-		start, end = end, start
+// order returns index1 and index2 in buffer order.
+func order(index1, index2 edit.Index) (first, second edit.Index) {
+	if index1.Less(index2) {
+		return index1, index2
 	}
-	b.Delete(start, end)
+	return index2, index1
 }
 
 // textInput inserts text into the focus, or performs another action depending
@@ -69,7 +69,7 @@ func deleteSelection(b *edit.Buffer, start, end edit.Index) {
 func textInput(buf *edit.Buffer, s string) {
 	index := buf.IndexFromMark(insertMark)
 	if sel := buf.IndexFromMark(selMark); sel != index {
-		deleteSelection(buf, sel, index)
+		buf.Delete(order(sel, index))
 	}
 	if s == "\n" {
 		// autoindent
@@ -193,14 +193,14 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 			case sdl.K_BACKSPACE:
 				index := rc.Focus.IndexFromMark(insertMark)
 				if sel := rc.Focus.IndexFromMark(selMark); sel != index {
-					deleteSelection(rc.Focus, sel, index)
+					rc.Focus.Delete(order(sel, index))
 				} else {
 					rc.Focus.Delete(rc.Focus.ShiftIndex(index, -1), index)
 				}
 			case sdl.K_DELETE:
 				index := rc.Focus.IndexFromMark(insertMark)
 				if sel := rc.Focus.IndexFromMark(selMark); sel != index {
-					deleteSelection(rc.Focus, sel, index)
+					rc.Focus.Delete(order(sel, index))
 				} else {
 					rc.Focus.Delete(index, rc.Focus.ShiftIndex(index, 1))
 				}
@@ -291,6 +291,12 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 							selMark)
 					}
 				}
+			case sdl.K_c:
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+					sel := rc.Focus.IndexFromMark(selMark)
+					insert := rc.Focus.IndexFromMark(insertMark)
+					sdl.SetClipboardText(rc.Focus.Get(order(sel, insert)))
+				}
 			case sdl.K_e:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
 					index := rc.Focus.IndexFromMark(insertMark)
@@ -334,11 +340,28 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					index := rc.Focus.IndexFromMark(insertMark)
 					rc.Focus.Delete(edit.Index{index.Line, 0}, index)
 				}
+			case sdl.K_v:
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+					sel := rc.Focus.IndexFromMark(selMark)
+					insert := rc.Focus.IndexFromMark(insertMark)
+					if sel != insert {
+						rc.Focus.Delete(order(sel, insert))
+					}
+					insert, _ = order(sel, insert)
+					rc.Focus.Insert(insert, sdl.GetClipboardText())
+				}
 			case sdl.K_w:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
 					end := rc.Focus.IndexFromMark(insertMark)
 					begin := shiftIndexByWord(rc.Focus, end, -1)
 					rc.Focus.Delete(begin, end)
+				}
+			case sdl.K_x:
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+					sel := rc.Focus.IndexFromMark(selMark)
+					insert := rc.Focus.IndexFromMark(insertMark)
+					sdl.SetClipboardText(rc.Focus.Get(order(sel, insert)))
+					rc.Focus.Delete(order(sel, insert))
 				}
 			default:
 				recognized = false
