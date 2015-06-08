@@ -14,7 +14,10 @@ import (
 	"github.com/veandco/go-sdl2/sdl_ttf"
 )
 
-const insertMark = iota // ID of the insertion (cursor) mark
+const (
+	insertMark = iota // ID of the cursor/insertion mark
+	selMark           // ID of the selection anchor mark
+)
 
 // getFont loads the default TTF from memory and returns it.
 func getFont() *ttf.Font {
@@ -101,6 +104,7 @@ func main() {
 	pane.SetTabWidth(4)
 	pane.SetSyntax()
 	pane.Mark(edit.Index{1, 0}, insertMark)
+	pane.Mark(edit.Index{1, 0}, selMark)
 
 	win := createWindow(arg, font)
 	defer win.Destroy()

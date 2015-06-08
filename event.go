@@ -21,7 +21,8 @@ var (
 )
 
 // singleClick processes a single left mouse click at the given coordinates.
-func singleClick(pane *Pane, win *sdl.Window, font *ttf.Font, x, y int) {
+func singleClick(pane *Pane, win *sdl.Window, font *ttf.Font, x, y int,
+	shift bool) {
 	_, height := win.GetSize()
 	ps := paneSpace(height, 1, font)
 	y = y % ps
@@ -29,6 +30,9 @@ func singleClick(pane *Pane, win *sdl.Window, font *ttf.Font, x, y int) {
 	y /= font.Height()
 	x /= fontWidth
 	pane.Mark(pane.IndexFromCoords(x, y), insertMark)
+	if !shift {
+		pane.Mark(pane.IndexFromMark(insertMark), selMark)
+	}
 }
 
 // textInput inserts text into the focus, or performs another action depending
@@ -135,6 +139,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 	rc := &RenderContext{pane, edit.NewBuffer(), pane.Buffer, status, font,
 		win}
 	rc.Input.Mark(edit.Index{1, 0}, insertMark)
+	rc.Input.Mark(edit.Index{1, 0}, selMark)
 	render(rc)
 	for {
 		switch event := sdl.WaitEvent().(type) {
@@ -156,22 +161,39 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					col, row := rc.Focus.CoordsFromIndex(index)
 					rc.Focus.Mark(rc.Focus.IndexFromCoords(col, row+1),
 						insertMark)
+					if event.Keysym.Mod&sdl.KMOD_SHIFT == 0 {
+						rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark),
+							selMark)
+					}
 				}
 			case sdl.K_END:
 				index := rc.Focus.IndexFromMark(insertMark)
 				rc.Focus.Mark(edit.Index{index.Line, 2 << 30}, insertMark)
+				if event.Keysym.Mod&sdl.KMOD_SHIFT == 0 {
+					rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark), selMark)
+				}
 			case sdl.K_LEFT:
 				index := rc.Focus.IndexFromMark(insertMark)
 				rc.Focus.Mark(rc.Focus.ShiftIndex(index, -1), insertMark)
+				if event.Keysym.Mod&sdl.KMOD_SHIFT == 0 {
+					rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark), selMark)
+				}
 			case sdl.K_HOME:
 				index := rc.Focus.IndexFromMark(insertMark)
 				rc.Focus.Mark(edit.Index{index.Line, 0}, insertMark)
+				if event.Keysym.Mod&sdl.KMOD_SHIFT == 0 {
+					rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark), selMark)
+				}
 			case sdl.K_PAGEDOWN:
 				if rc.Focus == rc.Pane.Buffer {
 					index := rc.Pane.IndexFromMark(insertMark)
 					col, row := rc.Pane.CoordsFromIndex(index)
 					rc.Pane.Mark(rc.Pane.IndexFromCoords(col,
 						row+rc.Pane.Rows), insertMark)
+					if event.Keysym.Mod&sdl.KMOD_SHIFT == 0 {
+						rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark),
+							selMark)
+					}
 				}
 			case sdl.K_PAGEUP:
 				if rc.Focus == rc.Pane.Buffer {
@@ -179,6 +201,10 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					col, row := rc.Pane.CoordsFromIndex(index)
 					rc.Pane.Mark(rc.Pane.IndexFromCoords(col,
 						row-rc.Pane.Rows), insertMark)
+					if event.Keysym.Mod&sdl.KMOD_SHIFT == 0 {
+						rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark),
+							selMark)
+					}
 				}
 			case sdl.K_RETURN:
 				if rc.Focus == rc.Pane.Buffer {
@@ -189,6 +215,9 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 			case sdl.K_RIGHT:
 				index := rc.Focus.IndexFromMark(insertMark)
 				rc.Focus.Mark(rc.Focus.ShiftIndex(index, 1), insertMark)
+				if event.Keysym.Mod&sdl.KMOD_SHIFT == 0 {
+					rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark), selMark)
+				}
 			case sdl.K_TAB:
 				if rc.Focus == rc.Pane.Buffer {
 					textInput(rc.Focus, "\t")
@@ -199,16 +228,28 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					col, row := rc.Focus.CoordsFromIndex(index)
 					rc.Focus.Mark(rc.Focus.IndexFromCoords(col, row-1),
 						insertMark)
+					if event.Keysym.Mod&sdl.KMOD_SHIFT == 0 {
+						rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark),
+							selMark)
+					}
 				}
 			case sdl.K_a:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
 					index := rc.Focus.IndexFromMark(insertMark)
 					rc.Focus.Mark(edit.Index{index.Line, 0}, insertMark)
+					if event.Keysym.Mod&sdl.KMOD_SHIFT == 0 {
+						rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark),
+							selMark)
+					}
 				}
 			case sdl.K_e:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
 					index := rc.Focus.IndexFromMark(insertMark)
 					rc.Focus.Mark(edit.Index{index.Line, 2 << 30}, insertMark)
+					if event.Keysym.Mod&sdl.KMOD_SHIFT == 0 {
+						rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark),
+							selMark)
+					}
 				}
 			case sdl.K_h:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
@@ -260,7 +301,9 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 		case *sdl.MouseButtonEvent:
 			if event.Type == sdl.MOUSEBUTTONDOWN &&
 				event.Button == sdl.BUTTON_LEFT {
-				singleClick(rc.Pane, win, font, int(event.X), int(event.Y))
+				state := sdl.GetKeyboardState()
+				singleClick(rc.Pane, win, font, int(event.X), int(event.Y),
+					state[sdl.SCANCODE_LSHIFT]|state[sdl.SCANCODE_RSHIFT] != 0)
 				render(rc)
 			}
 		case *sdl.MouseWheelEvent:

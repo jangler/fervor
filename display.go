@@ -69,7 +69,15 @@ func drawBuffer(pane *Pane, font *ttf.Font, dst *sdl.Surface, focused bool) {
 	x, y := padPx, padPx
 	mark := pane.IndexFromMark(insertMark)
 	col, row := pane.CoordsFromIndex(mark)
+	sel := pane.IndexFromMark(selMark)
+	selStart, selEnd := sel, mark
+	if mark.Less(sel) {
+		selStart, selEnd = mark, sel
+	}
+	startCol, startRow := pane.CoordsFromIndex(selStart)
+	endCol, endRow := pane.CoordsFromIndex(selEnd)
 	for i, line := range pane.DisplayLines() {
+		c := 0
 		for e := line.Front(); e != nil; e = e.Next() {
 			text := e.Value.(edit.Fragment).Text
 			var fg sdl.Color
@@ -83,7 +91,30 @@ func drawBuffer(pane *Pane, font *ttf.Font, dst *sdl.Surface, focused bool) {
 			default:
 				fg = fgColorSDL
 			}
-			x = drawString(font, text, fg, bgColorSDL, dst, x, y)
+			if i >= startRow && i <= endRow {
+				var pre, mid, post string
+				if i == startRow && c < startCol {
+					if startCol-c < len(text) {
+						pre = text[:startCol-c]
+					} else {
+						pre = text
+					}
+				}
+				if i == endRow && c+len(text) > endCol {
+					if c < endCol {
+						post = text[endCol-c:]
+					} else {
+						post = text
+					}
+				}
+				mid = text[len(pre) : len(text)-len(post)]
+				x = drawString(font, pre, fg, bgColorSDL, dst, x, y)
+				x = drawString(font, mid, fg, statusBgColorSDL, dst, x, y)
+				x = drawString(font, post, fg, bgColorSDL, dst, x, y)
+				c += len(text)
+			} else {
+				x = drawString(font, text, fg, bgColorSDL, dst, x, y)
+			}
 		}
 		if focused && i == row {
 			dst.FillRect(&sdl.Rect{int32(padPx + fontWidth*col), int32(y),
