@@ -54,6 +54,17 @@ func openFile(path string) (*edit.Buffer, error) {
 	return buf, nil
 }
 
+// SetSyntax automatically sets the syntax rules for p.
+func (p *Pane) SetSyntax() {
+	if strings.HasSuffix(p.Title, ".go") {
+		p.Buffer.SetSyntax(goRules)
+	} else if strings.HasSuffix(p.Title, ".json") {
+		p.Buffer.SetSyntax(jsonRules)
+	} else {
+		p.Buffer.SetSyntax([]edit.Rule{})
+	}
+}
+
 func main() {
 	initFlag()
 	log.SetFlags(log.Lshortfile)
@@ -80,10 +91,8 @@ func main() {
 		if buf, err := openFile(arg); err == nil {
 			status = fmt.Sprintf(`Opened "%s".`, arg)
 			buf.SetTabWidth(4)
-			if strings.HasSuffix(arg, ".go") {
-				buf.SetSyntax(goRules)
-			}
 			pane = &Pane{buf, arg, 4, 80, 25}
+			pane.SetSyntax()
 		} else {
 			status = err.Error()
 		}
