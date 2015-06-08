@@ -13,7 +13,8 @@ import (
 )
 
 const (
-	openPrompt = "Open: "
+	openPrompt   = "Open: "
+	saveAsPrompt = "Save as: "
 )
 
 var (
@@ -167,6 +168,17 @@ func (rc *RenderContext) EnterInput() {
 		rc.Pane.Mark(edit.Index{1, 0}, selMark)
 		rc.Pane.Title = input
 		rc.Pane.SetSyntax()
+	case saveAsPrompt:
+		prevTitle := rc.Pane.Title
+		rc.Pane.Title = input
+		if err := saveFile(rc.Pane); err == nil {
+			rc.Status = fmt.Sprintf(`Saved "%s".`, input)
+			rc.Window.SetTitle(input)
+			rc.Pane.SetSyntax()
+		} else {
+			rc.Status = err.Error()
+			rc.Pane.Title = prevTitle
+		}
 	}
 	rc.Focus = rc.Pane.Buffer
 }
@@ -329,10 +341,15 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					if rc.Focus != rc.Pane.Buffer {
 						break
 					}
-					if err := saveFile(rc.Pane); err == nil {
-						rc.Status = fmt.Sprintf(`Saved "%s".`, rc.Pane.Title)
+					if event.Keysym.Mod&sdl.KMOD_SHIFT != 0 {
+						rc.Prompt(saveAsPrompt)
 					} else {
-						rc.Status = err.Error()
+						if err := saveFile(rc.Pane); err == nil {
+							rc.Status = fmt.Sprintf(`Saved "%s".`,
+								rc.Pane.Title)
+						} else {
+							rc.Status = err.Error()
+						}
 					}
 				}
 			case sdl.K_u:
