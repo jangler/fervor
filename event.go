@@ -35,10 +35,21 @@ func singleClick(pane *Pane, win *sdl.Window, font *ttf.Font, x, y int,
 	}
 }
 
+// deleteSelection deletes the text between start to end in b.
+func deleteSelection(b *edit.Buffer, start, end edit.Index) {
+	if end.Less(start) {
+		start, end = end, start
+	}
+	b.Delete(start, end)
+}
+
 // textInput inserts text into the focus, or performs another action depending
 // on the contents of the string.
 func textInput(buf *edit.Buffer, s string) {
 	index := buf.IndexFromMark(insertMark)
+	if sel := buf.IndexFromMark(selMark); sel != index {
+		deleteSelection(buf, sel, index)
+	}
 	if s == "\n" {
 		// autoindent
 		indent := buf.Get(edit.Index{index.Line, 0},
@@ -154,10 +165,18 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 			switch event.Keysym.Sym {
 			case sdl.K_BACKSPACE:
 				index := rc.Focus.IndexFromMark(insertMark)
-				rc.Focus.Delete(rc.Focus.ShiftIndex(index, -1), index)
+				if sel := rc.Focus.IndexFromMark(selMark); sel != index {
+					deleteSelection(rc.Focus, sel, index)
+				} else {
+					rc.Focus.Delete(rc.Focus.ShiftIndex(index, -1), index)
+				}
 			case sdl.K_DELETE:
 				index := rc.Focus.IndexFromMark(insertMark)
-				rc.Focus.Delete(index, rc.Focus.ShiftIndex(index, 1))
+				if sel := rc.Focus.IndexFromMark(selMark); sel != index {
+					deleteSelection(rc.Focus, sel, index)
+				} else {
+					rc.Focus.Delete(index, rc.Focus.ShiftIndex(index, 1))
+				}
 			case sdl.K_DOWN:
 				if rc.Focus == rc.Pane.Buffer {
 					index := rc.Focus.IndexFromMark(insertMark)
@@ -307,6 +326,12 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 				state := sdl.GetKeyboardState()
 				singleClick(rc.Pane, win, font, int(event.X), int(event.Y),
 					state[sdl.SCANCODE_LSHIFT]|state[sdl.SCANCODE_RSHIFT] != 0)
+				render(rc)
+			}
+		case *sdl.MouseMotionEvent:
+			if event.State == sdl.ButtonLMask() {
+				singleClick(rc.Pane, win, font, int(event.X), int(event.Y),
+					true)
 				render(rc)
 			}
 		case *sdl.MouseWheelEvent:
