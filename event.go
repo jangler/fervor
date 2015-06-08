@@ -114,7 +114,7 @@ func shiftIndexByWord(b *edit.Buffer, index edit.Index, n int) edit.Index {
 // saveFile writes the contents of pane to a file with the name of the pane's
 // title.
 func saveFile(pane *Pane) error {
-	text := pane.Get(edit.Index{1, 0}, pane.End())
+	text := pane.Get(edit.Index{1, 0}, pane.End()) + "\n"
 	return ioutil.WriteFile(pane.Title, []byte(text), 0664)
 }
 
@@ -134,6 +134,10 @@ func (rc *RenderContext) EnterInput() {
 		rc.Pane.Delete(edit.Index{1, 0}, rc.Pane.End())
 		if contents, err := ioutil.ReadFile(input); err == nil {
 			rc.Pane.Insert(edit.Index{1, 0}, string(contents))
+			penult := rc.Pane.ShiftIndex(rc.Pane.End(), -1)
+			if rc.Pane.Get(penult, rc.Pane.End()) == "\n" {
+				rc.Pane.Delete(penult, rc.Pane.End())
+			}
 			rc.Status = fmt.Sprintf(`Opened "%s".`, input)
 		} else {
 			rc.Status = fmt.Sprintf(`New file: "%s".`, input)

@@ -57,6 +57,9 @@ func openFile(path string) (*edit.Buffer, error) {
 	}
 	buf := edit.NewBuffer()
 	buf.Insert(buf.End(), string(contents))
+	if buf.Get(buf.ShiftIndex(buf.End(), -1), buf.End()) == "\n" {
+		buf.Delete(buf.ShiftIndex(buf.End(), -1), buf.End())
+	}
 	return buf, nil
 }
 
