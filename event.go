@@ -128,6 +128,7 @@ func (rc *RenderContext) EnterInput() {
 			rc.Status = fmt.Sprintf(`New file: "%s".`, input)
 		}
 		rc.Pane.Mark(edit.Index{1, 0}, insertMark)
+		rc.Pane.Mark(edit.Index{1, 0}, selMark)
 		rc.Pane.Title = input
 		rc.Pane.SetSyntax()
 	}
@@ -141,6 +142,8 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 	rc.Input.Mark(edit.Index{1, 0}, insertMark)
 	rc.Input.Mark(edit.Index{1, 0}, selMark)
 	render(rc)
+	w, h := win.GetSize()
+	win.SetSize(w, h)
 	for {
 		switch event := sdl.WaitEvent().(type) {
 		case *sdl.KeyDownEvent:

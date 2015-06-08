@@ -111,6 +111,5 @@ func main() {
 
 	w, h := win.GetSize()
 	resize(pane, font, w, h)
-	win.SetSize(w, h) // force correct window size
 	eventLoop(pane, status, font, win)
 }
