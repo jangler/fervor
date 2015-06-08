@@ -21,6 +21,9 @@ var (
 	bgColorSDL       = sdl.Color{0xff, 0xff, 0xff, 0xff}
 	fgColorSDL       = sdl.Color{0x2f, 0x2f, 0x2f, 0xff}
 	statusBgColorSDL = sdl.Color{0xe2, 0xe2, 0xe2, 0xff}
+	commentColor     = sdl.Color{0x42, 0x6c, 0xbb, 0xff}
+	keywordColor     = sdl.Color{0x37, 0x79, 0x49, 0xff}
+	literalColor     = sdl.Color{0xbe, 0x53, 0x4b, 0xff}
 )
 
 var fontWidth int
@@ -69,7 +72,18 @@ func drawBuffer(pane *Pane, font *ttf.Font, dst *sdl.Surface) {
 	for i, line := range pane.DisplayLines() {
 		for e := line.Front(); e != nil; e = e.Next() {
 			text := e.Value.(edit.Fragment).Text
-			x = drawString(font, text, fgColorSDL, bgColorSDL, dst, x, y)
+			var fg sdl.Color
+			switch e.Value.(edit.Fragment).Tag {
+			case commentId:
+				fg = commentColor
+			case keywordId:
+				fg = keywordColor
+			case literalId:
+				fg = literalColor
+			default:
+				fg = fgColorSDL
+			}
+			x = drawString(font, text, fg, bgColorSDL, dst, x, y)
 		}
 		if i == row {
 			dst.FillRect(&sdl.Rect{int32(padPx + fontWidth*col), int32(y),
@@ -153,8 +167,7 @@ func paneSpace(height, n int, font *ttf.Font) int {
 // sized equally out of n panes.
 func bufSize(width, height, n int, font *ttf.Font) (cols, rows int) {
 	cols = (width - padPx*2) / fontWidth
-	rows = (paneSpace(height, n, font) - font.Height() - padPx*2) /
-		font.Height()
+	rows = paneSpace(height, n, font) / font.Height()
 	return
 }
 

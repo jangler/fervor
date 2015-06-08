@@ -93,6 +93,7 @@ func (p *Pane) ShiftIndexByWord(index edit.Index, n int) edit.Index {
 // eventLoop handles SDL events until quit is requested.
 func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 	rc := &RenderContext{pane, status, font, win}
+	render(rc)
 	for {
 		switch event := sdl.WaitEvent().(type) {
 		case *sdl.KeyDownEvent:

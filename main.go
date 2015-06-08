@@ -79,6 +79,7 @@ func main() {
 		if buf, err := openFile(arg); err == nil {
 			status = fmt.Sprintf(`Opened "%s".`, arg)
 			buf.SetTabWidth(4)
+			buf.SetSyntax(goRules)
 			pane = &Pane{buf, arg, 4, 80, 25}
 		} else {
 			status = err.Error()
