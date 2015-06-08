@@ -69,10 +69,7 @@ func main() {
 		log.Fatal(err)
 	}
 
-	win := createWindow(os.Args[0], font)
-	defer win.Destroy()
-
-	panes := make([]*Pane, 0)
+	var pane *Pane
 	args := flag.Args()
 	var status string
 	if len(args) == 0 {
@@ -82,15 +79,17 @@ func main() {
 		if buf, err := openFile(arg); err == nil {
 			status = fmt.Sprintf(`Opened "%s".`, arg)
 			buf.SetTabWidth(4)
-			panes = append(panes, &Pane{buf, arg, 4, 80, 25, false})
+			pane = &Pane{buf, arg, 4, 80, 25}
 		} else {
 			status = err.Error()
 		}
 	}
-	panes[0].Focused = true
+
+	win := createWindow(args[0], font)
+	defer win.Destroy()
 
 	w, h := win.GetSize()
-	resize(panes, font, w, h)
+	resize(pane, font, w, h)
 	win.SetSize(w, h) // force correct window size
-	eventLoop(panes, status, font, win)
+	eventLoop(pane, status, font, win)
 }

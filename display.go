@@ -14,16 +14,13 @@ const padPx = 2 // number of pixels used to pad UI elements
 var (
 	// colors for use with FillRect
 	bgColor       uint32 = 0xffffffff
-	paneFgColor   uint32 = 0xff375eab
-	paneBgColor   uint32 = 0xffe0ebf5
-	statusBgColor uint32 = 0xffe9e9e9
+	fgColor       uint32 = 0xff2f2f2f
+	statusBgColor uint32 = 0xffe2e2e2
 
 	// colors for use with ttf functions
 	bgColorSDL       = sdl.Color{0xff, 0xff, 0xff, 0xff}
-	fgColorSDL       = sdl.Color{0x22, 0x22, 0x22, 0xff}
-	paneFgColorSDL   = sdl.Color{0x37, 0x5e, 0xab, 0xff}
-	paneBgColorSDL   = sdl.Color{0xe0, 0xeb, 0xf5, 0xff}
-	statusBgColorSDL = sdl.Color{0xe9, 0xe9, 0xe9, 0xff}
+	fgColorSDL       = sdl.Color{0x2f, 0x2f, 0x2f, 0xff}
+	statusBgColorSDL = sdl.Color{0xe2, 0xe2, 0xe2, 0xff}
 )
 
 var fontWidth int
@@ -34,12 +31,11 @@ type Pane struct {
 	Title      string
 	TabWidth   int
 	Cols, Rows int
-	Focused    bool
 }
 
 // See ensurees that the mark with ID id is visible on the pane's screen.
 func (p Pane) See(id int) {
-	index, _ := p.IndexFromMark(id)
+	index := p.IndexFromMark(id)
 	_, row := p.CoordsFromIndex(index)
 	if row < -p.Rows {
 		p.Scroll(row - p.Rows/2)
@@ -65,31 +61,19 @@ func createWindow(title string, font *ttf.Font) *sdl.Window {
 	return win
 }
 
-// drawPaneHeader draws a pane header displaying the string s.
-func drawPaneHeader(dst *sdl.Surface, font *ttf.Font, s string, y int) {
-	bgRect := sdl.Rect{
-		0,
-		int32(y),
-		dst.W,
-		int32(font.Height()) + padPx*2,
-	}
-	dst.FillRect(&bgRect, paneBgColor)
-	drawString(font, s, paneFgColorSDL, paneBgColorSDL, dst, padPx, y+padPx)
-}
-
 // drawBuffer draws the displayed contents of pane to dst using font.
-func drawBuffer(pane *Pane, font *ttf.Font, dst *sdl.Surface, y int) {
-	x := padPx
-	mark, _ := pane.IndexFromMark(insertMark)
+func drawBuffer(pane *Pane, font *ttf.Font, dst *sdl.Surface) {
+	x, y := padPx, padPx
+	mark := pane.IndexFromMark(insertMark)
 	col, row := pane.CoordsFromIndex(mark)
 	for i, line := range pane.DisplayLines() {
 		for e := line.Front(); e != nil; e = e.Next() {
 			text := e.Value.(edit.Fragment).Text
 			x = drawString(font, text, fgColorSDL, bgColorSDL, dst, x, y)
 		}
-		if i == row && pane.Focused {
+		if i == row {
 			dst.FillRect(&sdl.Rect{int32(padPx + fontWidth*col), int32(y),
-				1, int32(font.Height())}, paneFgColor)
+				1, int32(font.Height())}, fgColor)
 		}
 		y += font.Height()
 		x = padPx
@@ -132,7 +116,7 @@ func drawStatusLine(dst *sdl.Surface, font *ttf.Font, s string, pane *Pane) {
 		int(dst.H)-font.Height()-padPx)
 
 	// draw cursor pos
-	index, _ := pane.IndexFromMark(insertMark)
+	index := pane.IndexFromMark(insertMark)
 	line := pane.Get(edit.Index{index.Line, 0}, index)
 	col := 0
 	for _, ch := range line {
@@ -176,8 +160,7 @@ func bufSize(width, height, n int, font *ttf.Font) (cols, rows int) {
 
 // RenderContext contains information needed to update the display.
 type RenderContext struct {
-	Panes  []*Pane
-	Focus  *Pane
+	Pane   *Pane
 	Status string
 	Font   *ttf.Font
 	Window *sdl.Window
@@ -190,11 +173,7 @@ func render(rc *RenderContext) {
 		log.Fatal(err)
 	}
 	surf.FillRect(&sdl.Rect{0, 0, surf.W, surf.H}, bgColor)
-	ps := paneSpace(int(surf.H), len(rc.Panes), rc.Font)
-	for i, pane := range rc.Panes {
-		drawPaneHeader(surf, rc.Font, pane.Title, ps*i)
-		drawBuffer(pane, rc.Font, surf, ps*i+rc.Font.Height()+padPx*3)
-	}
-	drawStatusLine(surf, rc.Font, rc.Status, rc.Focus)
+	drawBuffer(rc.Pane, rc.Font, surf)
+	drawStatusLine(surf, rc.Font, rc.Status, rc.Pane)
 	rc.Window.UpdateSurface()
 }
