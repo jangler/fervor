@@ -2,6 +2,8 @@ package main
 
 import (
 	"bytes"
+	"fmt"
+	"io/ioutil"
 	"regexp"
 
 	"github.com/jangler/edit"
@@ -18,7 +20,7 @@ var (
 func singleClick(pane *Pane, win *sdl.Window, font *ttf.Font, x, y int) {
 	_, height := win.GetSize()
 	ps := paneSpace(height, 1, font)
-	y = y%ps
+	y = y % ps
 	x -= padPx - fontWidth/2
 	y /= font.Height()
 	x /= fontWidth
@@ -90,6 +92,13 @@ func (p *Pane) ShiftIndexByWord(index edit.Index, n int) edit.Index {
 	return index
 }
 
+// saveFile writes the contents of pane to a file with the name of the pane's
+// title.
+func saveFile(pane *Pane) error {
+	text := pane.Get(edit.Index{1, 0}, pane.End())
+	return ioutil.WriteFile(pane.Title, []byte(text), 0664)
+}
+
 // eventLoop handles SDL events until quit is requested.
 func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 	rc := &RenderContext{pane, status, font, win}
@@ -97,6 +106,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 	for {
 		switch event := sdl.WaitEvent().(type) {
 		case *sdl.KeyDownEvent:
+			rc.Status = ""
 			switch event.Keysym.Sym {
 			case sdl.K_BACKSPACE:
 				index := pane.IndexFromMark(insertMark)
@@ -155,6 +165,14 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 			case sdl.K_q:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
 					return
+				}
+			case sdl.K_s:
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+					if err := saveFile(pane); err == nil {
+						rc.Status = fmt.Sprintf(`Saved "%s".`, pane.Title)
+					} else {
+						rc.Status = err.Error()
+					}
 				}
 			case sdl.K_u:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {

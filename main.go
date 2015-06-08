@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"strings"
 	"unsafe"
 
 	"github.com/jangler/edit"
@@ -79,7 +80,9 @@ func main() {
 		if buf, err := openFile(arg); err == nil {
 			status = fmt.Sprintf(`Opened "%s".`, arg)
 			buf.SetTabWidth(4)
-			buf.SetSyntax(goRules)
+			if strings.HasSuffix(arg, ".go") {
+				buf.SetSyntax(goRules)
+			}
 			pane = &Pane{buf, arg, 4, 80, 25}
 		} else {
 			status = err.Error()

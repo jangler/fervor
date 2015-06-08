@@ -20,9 +20,11 @@ var (
 	goRules = []edit.Rule{
 		mustCompile(`//.+?$`, commentId),
 		mustCompile(`/*.*?\*/`, commentId),
-		mustCompile(`\b(break|case|chan|const|continue|default|defer|else|` +
-			`fallthrough|for|func|go|goto|if|import|interface|map|package|` +
+		mustCompile(`\b(break|case|chan|const|continue|default|defer|else|`+
+			`fallthrough|for|func|go|goto|if|import|interface|map|package|`+
 			`range|return|select|struct|switch|type|var)\b`, keywordId),
+		mustCompile(`\b(close|len|cap|new|make|append|copy|delete|complex|`+
+			`real|imag|panic|recover|print|println)\b`, keywordId),
 		mustCompile(`'.*?'`, literalId),
 		mustCompile(`".*?"`, literalId),
 		mustCompile("`.*?`", literalId),
