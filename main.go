@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"runtime"
 	"strings"
 	"unsafe"
 
@@ -94,9 +95,12 @@ func main() {
 	initFlag()
 	log.SetFlags(log.Lshortfile)
 
+	runtime.LockOSThread()
 	sdl.Init(sdl.INIT_VIDEO)
 	defer sdl.Quit()
-	ttf.Init()
+	if err := ttf.Init(); err != nil {
+		log.Fatal(err)
+	}
 	defer ttf.Quit()
 
 	font := getFont()

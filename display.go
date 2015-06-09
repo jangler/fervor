@@ -132,7 +132,8 @@ func drawString(font *ttf.Font, s string, fg, bg sdl.Color, dst *sdl.Surface,
 	if s != "" {
 		surf, err := font.RenderUTF8_Shaded(s, fg, bg)
 		if err != nil {
-			log.Fatalf("%v, %#v\n", err, s)
+			log.Printf("%v: %#v\n", err, s)
+			return x
 		}
 		defer surf.Free()
 		err = surf.Blit(&sdl.Rect{0, 0, surf.W, surf.H}, dst,
