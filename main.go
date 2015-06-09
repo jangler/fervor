@@ -60,6 +60,7 @@ func openFile(path string) (*edit.Buffer, error) {
 	if buf.Get(buf.ShiftIndex(buf.End(), -1), buf.End()) == "\n" {
 		buf.Delete(buf.ShiftIndex(buf.End(), -1), buf.End())
 	}
+	buf.ResetModified()
 	return buf, nil
 }
 
