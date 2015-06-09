@@ -3,7 +3,9 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
+	"log"
 	"regexp"
+	"time"
 
 	"code.google.com/p/jamslam-freetype-go/freetype/truetype"
 	"github.com/BurntSushi/xgb/xproto"
@@ -222,10 +224,9 @@ func eventLoop(pane *Pane, status string, font *truetype.Font,
 	render(rc)
 	w, h := win.Geom.Width(), win.Geom.Height()
 	win.Resize(w, h)
-	/*
-		clickCount := 0
-		lastClick := time.Now()
-	*/
+	clickCount := 0
+	lastClick := time.Now()
+	var shift bool
 
 	wmDeleteWindow := make(chan int, 1)
 	win.WMGracefulClose(
@@ -233,19 +234,62 @@ func eventLoop(pane *Pane, status string, font *truetype.Font,
 			wmDeleteWindow <- 1
 		})
 
-	win.Listen(xproto.EventMaskKeyPress)
+	win.Listen(xproto.EventMaskKeyPress | xproto.EventMaskKeyRelease |
+		xproto.EventMaskButtonPress | xproto.EventMaskExposure |
+		xproto.EventMaskStructureNotify)
 	xevent.KeyPressFun(
 		func(xu *xgbutil.XUtil, event xevent.KeyPressEvent) {
+			log.Print("key press", event)
 			//render(rc)
+		}).Connect(win.X, win.Id)
+	xevent.KeyReleaseFun(
+		func(xu *xgbutil.XUtil, event xevent.KeyReleaseEvent) {
+			log.Print("key release", event)
+			//render(rc)
+		}).Connect(win.X, win.Id)
+	xevent.ButtonPressFun(
+		func(xu *xgbutil.XUtil, event xevent.ButtonPressEvent) {
+			switch event.Detail {
+			case 1: // left click
+				if time.Since(lastClick) < time.Second/4 {
+					clickCount = clickCount%3 + 1
+				} else {
+					clickCount = 1
+				}
+				lastClick = time.Now()
+				click(rc.Pane, win, font, int(event.EventX), int(event.EventY),
+					clickCount, shift)
+				render(rc)
+			case 4: // mouse wheel up
+				rc.Pane.Scroll(-3)
+				render(rc)
+			case 5: // mouse wheel down
+				rc.Pane.Scroll(3)
+				render(rc)
+			}
+		}).Connect(win.X, win.Id)
+	xevent.ExposeFun(
+		func(xu *xgbutil.XUtil, event xevent.ExposeEvent) {
+			expose(rc)
+		}).Connect(win.X, win.Id)
+	xevent.ConfigureNotifyFun(
+		func(xu *xgbutil.XUtil, event xevent.ConfigureNotifyEvent) {
+			w, h := rc.Window.Geom.Width(), rc.Window.Geom.Height()
+			rc.Window.Geometry()
+			if w != rc.Window.Geom.Width() || h != rc.Window.Geom.Height() {
+				resize(rc.Pane, font, rc.Window.Geom.Width(),
+					rc.Window.Geom.Height())
+				render(rc)
+			}
 		}).Connect(win.X, win.Id)
 	pingBefore, pingAfter, pingQuit := xevent.MainPing(win.X)
 
 	for {
 		select {
-		case <-pingBefore:
-			<-pingAfter
 		case <-wmDeleteWindow:
 			return
+		case <-pingBefore:
+			<-pingAfter
 		case <-pingQuit:
 			return
 		}
@@ -469,45 +513,16 @@ func eventLoop(pane *Pane, status string, font *truetype.Font,
 					rc.Pane.See(insertMark)
 					render(rc)
 				}
-			case *sdl.MouseButtonEvent:
-				if event.Type == sdl.MOUSEBUTTONDOWN &&
-					event.Button == sdl.BUTTON_LEFT {
-					state := sdl.GetKeyboardState()
-					if time.Since(lastClick) < time.Second/4 {
-						clickCount = clickCount%3 + 1
-					} else {
-						clickCount = 1
-					}
-					lastClick = time.Now()
-					click(rc.Pane, win, font, int(event.X), int(event.Y),
-						clickCount,
-						state[sdl.SCANCODE_LSHIFT]|state[sdl.SCANCODE_RSHIFT] != 0)
-					render(rc)
-				}
 			case *sdl.MouseMotionEvent:
 				if event.State == sdl.ButtonLMask() {
 					click(rc.Pane, win, font, int(event.X), int(event.Y), 1, true)
 					render(rc)
 				}
-			case *sdl.MouseWheelEvent:
-				rc.Pane.Scroll(int(event.Y) * -3)
-				render(rc)
-			case *sdl.QuitEvent:
-				return
 			case *sdl.TextInputEvent:
 				if n := bytes.Index(event.Text[:], []byte{0}); n > 0 {
 					textInput(rc.Focus, string(event.Text[:n]))
 					render(rc)
 				}
-			case *sdl.WindowEvent:
-				switch event.Event {
-				case sdl.WINDOWEVENT_EXPOSED:
-					win.UpdateSurface()
-				case sdl.WINDOWEVENT_RESIZED:
-					resize(rc.Pane, font, int(event.Data1), int(event.Data2))
-					render(rc)
-				}
-			}
 		}
 	*/
 }

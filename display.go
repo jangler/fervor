@@ -214,18 +214,35 @@ type RenderContext struct {
 	Window *xwindow.Window
 }
 
+var savedImg *xgraphics.Image
+
+// getImg gets an image to be used for drawing the window contents. A
+// previously allocated image is reused if possible.
+func getImg(rc *RenderContext) *xgraphics.Image {
+	if savedImg == nil || savedImg.Bounds().Dx() != rc.Window.Geom.Width() ||
+		savedImg.Bounds().Dy() != rc.Window.Geom.Height() {
+		savedImg = xgraphics.New(rc.Window.X, image.Rect(0, 0,
+			rc.Window.Geom.Width(), rc.Window.Geom.Height()))
+		if err := savedImg.XSurfaceSet(rc.Window.Id); err != nil {
+			log.Fatal(err)
+		}
+	}
+	return savedImg
+}
+
+// expose repaints the window without redrawing its contents.
+func expose(rc *RenderContext) {
+	img := getImg(rc)
+	img.XPaint(rc.Window.Id)
+}
+
 // render updates the display.
 func render(rc *RenderContext) {
-	xrect := rc.Window.Geom
-	img := xgraphics.New(rc.Window.X, image.Rect(xrect.X(), xrect.Y(),
-		xrect.X()+xrect.Width(), xrect.Y()+xrect.Height()))
+	img := getImg(rc)
 	draw.Draw(img, img.Bounds(), &image.Uniform{bgColor}, image.ZP, draw.Src)
 	paneFocused := rc.Focus == rc.Pane.Buffer
 	drawBuffer(rc.Pane, rc.Font, img, paneFocused)
 	drawStatusLine(img, rc.Font, rc.Status, rc.Input, rc.Pane, !paneFocused)
-	if err := img.XSurfaceSet(rc.Window.Id); err != nil {
-		log.Fatal(err)
-	}
 	img.XDraw()
 	img.XPaint(rc.Window.Id)
 }
