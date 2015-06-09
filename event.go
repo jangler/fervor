@@ -73,6 +73,7 @@ func textInput(buf *edit.Buffer, s string) {
 	index := buf.IndexFromMark(insertMark)
 	if sel := buf.IndexFromMark(selMark); sel != index {
 		buf.Delete(order(sel, index))
+		index, _ = order(sel, index)
 	}
 	if s == "\n" {
 		// autoindent
@@ -399,8 +400,8 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					insert := rc.Focus.IndexFromMark(insertMark)
 					if sel != insert {
 						rc.Focus.Delete(order(sel, insert))
+						insert, _ = order(sel, insert)
 					}
-					insert, _ = order(sel, insert)
 					rc.Focus.Insert(insert, sdl.GetClipboardText())
 				}
 			case sdl.K_w:
