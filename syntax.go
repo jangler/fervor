@@ -16,11 +16,9 @@ const (
 	literalId
 )
 
-// rule sets for various languages. maybe it would be better to return these
-// sets as the results of functions instead of having them all compiled and
-// stored at startup.
-var (
-	goRules = []edit.Rule{ // complete
+// goRules returns syntax highlighting rules for Go.
+func goRules() []edit.Rule {
+	return []edit.Rule{
 		mustCompile(`//.+?$`, commentId),
 		mustCompile(`/\*.*?\*/`, commentId),
 		mustCompile(`\b(break|case|chan|const|continue|default|defer|else|`+
@@ -39,13 +37,21 @@ var (
 		mustCompile(`\b(\d+\.\d*|\d*\.\d+|\d+)([eE][+-]?\d+)?i?\b`, literalId),
 		mustCompile(`\b\d+\bi`, literalId),
 	}
-	jsonRules = []edit.Rule{ // complete
+}
+
+// jsonRules returns syntax highlighting rules for JSON.
+func jsonRules() []edit.Rule {
+	return []edit.Rule{
 		mustCompile(`"(\\.|[^"])*?":`, keywordId),
 		mustCompile(`"(\\.|[^"])*?"`, literalId),
 		mustCompile(`\b(true|false|null)\b`, literalId),
 		mustCompile(`\b(\d+\.\d*|\d*\.\d+|\d+)([Ee][+-]?\d+)?\b`, literalId),
 	}
-	pythonRules = []edit.Rule{ // complete
+}
+
+// pythonRules returns syntax highlighting rules for Python.
+func pythonRules() []edit.Rule {
+	return []edit.Rule{
 		mustCompile(`#.*$`, commentId),
 		mustCompile(`\b(and|as|assert|break|class|continue|def|del|elif|else|`+
 			`except|finally|for|from|global|if|import|in|is|lambda|nonlocal|`+
@@ -59,7 +65,14 @@ var (
 		mustCompile(`\b(\d+\.\d*|\d*\.\d+|\d+)([eE][+-]?\d+)?`+
 			`([jJ](\d+\.\d*|\d*\.\d+|\d+)([eE][+-]?\d+)?)?\b`, literalId),
 	}
-	bashRules = []edit.Rule{ // ?
+}
+
+// bashRules returns syntax highlighting rules for bash.
+func bashRules() []edit.Rule {
+	// Not sure how "complete" this is. All the builtins are accounted for, but
+	// I might check out how other programs syntax highlight bash to see if
+	// other things are usually highlighted.
+	return []edit.Rule{
 		mustCompile(`\$#`, -1),
 		mustCompile(`#.*$`, commentId),
 		mustCompile(`[!:.]| \[\[? | \]\]?|\b(alias|bg|bind|break|builtin|`+
@@ -73,4 +86,4 @@ var (
 		mustCompile(`\$?("(\\.|[^"])*?"|'(\\.|[^'])*?')`, literalId),
 		mustCompile("`(\\.|[^`])*?`", literalId),
 	}
-)
+}

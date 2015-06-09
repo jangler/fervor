@@ -68,20 +68,20 @@ func openFile(path string) (*edit.Buffer, error) {
 // SetSyntax automatically sets the syntax rules for p.
 func (p *Pane) SetSyntax() {
 	if strings.HasSuffix(p.Title, ".go") {
-		p.Buffer.SetSyntax(goRules)
+		p.Buffer.SetSyntax(goRules())
 	} else if strings.HasSuffix(p.Title, ".json") {
-		p.Buffer.SetSyntax(jsonRules)
+		p.Buffer.SetSyntax(jsonRules())
 	} else if strings.HasSuffix(p.Title, ".py") {
-		p.Buffer.SetSyntax(pythonRules)
+		p.Buffer.SetSyntax(pythonRules())
 	} else if strings.HasSuffix(p.Title, ".sh") {
-		p.Buffer.SetSyntax(pythonRules)
+		p.Buffer.SetSyntax(pythonRules())
 	} else {
 		firstLine := p.Buffer.Get(edit.Index{1, 0}, edit.Index{1, 2 << 30})
 		if strings.HasPrefix(firstLine, "#!") {
 			if strings.Contains(firstLine, "python") {
-				p.Buffer.SetSyntax(pythonRules)
+				p.Buffer.SetSyntax(pythonRules())
 			} else if strings.Contains(firstLine, "sh") {
-				p.Buffer.SetSyntax(bashRules)
+				p.Buffer.SetSyntax(bashRules())
 			} else {
 				p.Buffer.SetSyntax([]edit.Rule{})
 			}
