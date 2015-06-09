@@ -2,31 +2,31 @@ package main
 
 import (
 	"fmt"
+	"image"
+	"image/color"
+	"image/draw"
 	"log"
 
+	"code.google.com/p/jamslam-freetype-go/freetype/truetype"
+	"github.com/BurntSushi/xgbutil"
+	"github.com/BurntSushi/xgbutil/xgraphics"
+	"github.com/BurntSushi/xgbutil/xwindow"
 	"github.com/jangler/edit"
-	"github.com/veandco/go-sdl2/sdl"
-	"github.com/veandco/go-sdl2/sdl_ttf"
 )
 
+const fontSize = 12
 const padPx = 2 // number of pixels used to pad UI elements
 
 var (
-	// colors for use with FillRect
-	bgColor       uint32 = 0xffffffff
-	fgColor       uint32 = 0xff2f2f2f
-	statusBgColor uint32 = 0xffe2e2e2
-
-	// colors for use with ttf functions
-	bgColorSDL       = sdl.Color{0xff, 0xff, 0xff, 0xff}
-	fgColorSDL       = sdl.Color{0x2f, 0x2f, 0x2f, 0xff}
-	statusBgColorSDL = sdl.Color{0xe2, 0xe2, 0xe2, 0xff}
-	commentColor     = sdl.Color{0x3f, 0x5a, 0x8d, 0xff}
-	keywordColor     = sdl.Color{0x3a, 0x63, 0x41, 0xff}
-	literalColor     = sdl.Color{0x8e, 0x4a, 0x43, 0xff}
+	bgColor       = color.RGBA{0xff, 0xff, 0xff, 0xff}
+	fgColor       = color.RGBA{0x2f, 0x2f, 0x2f, 0xff}
+	statusBgColor = color.RGBA{0xe2, 0xe2, 0xe2, 0xff}
+	commentColor  = color.RGBA{0x3f, 0x5a, 0x8d, 0xff}
+	keywordColor  = color.RGBA{0x3a, 0x63, 0x41, 0xff}
+	literalColor  = color.RGBA{0x8e, 0x4a, 0x43, 0xff}
 )
 
-var fontWidth int
+var fontHeight, fontWidth int
 
 // Pane is a buffer with associated metadata.
 type Pane struct {
@@ -51,21 +51,22 @@ func (p Pane) See(id int) {
 	}
 }
 
-// createWindow returns a new SDL window of appropriate size given font, and
-// titled title.
-func createWindow(title string, font *ttf.Font) *sdl.Window {
+// createWindow returns a new window of appropriate size given font.
+func createWindow(xu *xgbutil.XUtil, font *truetype.Font) *xwindow.Window {
 	width := fontWidth*80 + padPx*2
-	height := font.Height()*27 + padPx*6
-	win, err := sdl.CreateWindow(title, sdl.WINDOWPOS_UNDEFINED,
-		sdl.WINDOWPOS_UNDEFINED, width, height, sdl.WINDOW_RESIZABLE)
+	height := fontHeight*27 + padPx*6
+	win, err := xwindow.Generate(xu)
 	if err != nil {
 		log.Fatal(err)
 	}
+	win.Create(xu.RootWin(), 0, 0, width, height, 0, 0)
+	win.Map()
 	return win
 }
 
-// drawBuffer draws the displayed contents of pane to dst using font.
-func drawBuffer(pane *Pane, font *ttf.Font, dst *sdl.Surface, focused bool) {
+// drawBuffer draws the displayed contents of pane to img using font.
+func drawBuffer(pane *Pane, font *truetype.Font, img *xgraphics.Image,
+	focused bool) {
 	x, y := padPx, padPx
 	mark := pane.IndexFromMark(insertMark)
 	col, row := pane.CoordsFromIndex(mark)
@@ -80,7 +81,7 @@ func drawBuffer(pane *Pane, font *ttf.Font, dst *sdl.Surface, focused bool) {
 		c := 0
 		for e := line.Front(); e != nil; e = e.Next() {
 			text := e.Value.(edit.Fragment).Text
-			var fg sdl.Color
+			var fg color.Color
 			switch e.Value.(edit.Fragment).Tag {
 			case commentId:
 				fg = commentColor
@@ -89,7 +90,7 @@ func drawBuffer(pane *Pane, font *ttf.Font, dst *sdl.Surface, focused bool) {
 			case literalId:
 				fg = literalColor
 			default:
-				fg = fgColorSDL
+				fg = fgColor
 			}
 			if i >= startRow && i <= endRow {
 				var pre, mid, post string
@@ -108,67 +109,57 @@ func drawBuffer(pane *Pane, font *ttf.Font, dst *sdl.Surface, focused bool) {
 					}
 				}
 				mid = text[len(pre) : len(text)-len(post)]
-				x = drawString(font, pre, fg, bgColorSDL, dst, x, y)
-				x = drawString(font, mid, fg, statusBgColorSDL, dst, x, y)
-				x = drawString(font, post, fg, bgColorSDL, dst, x, y)
+				x = drawString(font, pre, fg, bgColor, img, x, y)
+				x = drawString(font, mid, fg, statusBgColor, img, x, y)
+				x = drawString(font, post, fg, bgColor, img, x, y)
 				c += len(text)
 			} else {
-				x = drawString(font, text, fg, bgColorSDL, dst, x, y)
+				x = drawString(font, text, fg, bgColor, img, x, y)
 			}
 		}
 		if focused && i == row {
-			dst.FillRect(&sdl.Rect{int32(padPx + fontWidth*col), int32(y),
-				1, int32(font.Height())}, fgColor)
+			rect := image.Rect(padPx+fontWidth*col, y,
+				padPx+fontWidth*col+1, y+fontHeight)
+			draw.Draw(img, rect, &image.Uniform{fgColor}, image.ZP, draw.Src)
 		}
-		y += font.Height()
+		y += fontHeight
 		x = padPx
 	}
 }
 
-// drawString draws s to dst at (x, y) using font, and returns x plus the width
+// drawString draws s to img at (x, y) using font, and returns x plus the width
 // of the text in pixels.
-func drawString(font *ttf.Font, s string, fg, bg sdl.Color, dst *sdl.Surface,
-	x, y int) int {
-	if s != "" {
-		surf, err := font.RenderUTF8_Shaded(s, fg, bg)
-		if err != nil {
-			log.Printf("%v: %#v\n", err, s)
-			return x
-		}
-		defer surf.Free()
-		err = surf.Blit(&sdl.Rect{0, 0, surf.W, surf.H}, dst,
-			&sdl.Rect{int32(x), int32(y), 0, 0})
-		if err != nil {
-			log.Fatal(err)
-		}
-		x += int(surf.W)
+func drawString(font *truetype.Font, s string, fg, bg color.Color,
+	img *xgraphics.Image, x, y int) int {
+	x, y, err := img.Text(x, y, fg, fontSize, font, s)
+	if err != nil {
+		log.Fatal(err)
+		return x
 	}
 	return x
 }
 
 // drawStatusLine draws s at the bottom of dst using font.
-func drawStatusLine(dst *sdl.Surface, font *ttf.Font, s string,
+func drawStatusLine(img *xgraphics.Image, font *truetype.Font, s string,
 	input *edit.Buffer, pane *Pane, focused bool) {
 	// draw background
-	bgRect := sdl.Rect{
-		0,
-		dst.H - int32(font.Height()) - padPx*2,
-		dst.W,
-		int32(font.Height()) + padPx*2,
-	}
-	dst.FillRect(&bgRect, statusBgColor)
+	imgSize := img.Bounds().Size()
+	rect := image.Rect(0, imgSize.Y-fontHeight-padPx*2, imgSize.X,
+		imgSize.Y)
+	draw.Draw(img, rect, &image.Uniform{statusBgColor}, image.ZP, draw.Src)
 
 	// draw status text
-	x, y := padPx, int(dst.H)-font.Height()-padPx
-	x = drawString(font, s, fgColorSDL, statusBgColorSDL, dst, x, y)
+	x, y := padPx, imgSize.Y-fontHeight-padPx
+	x = drawString(font, s, fgColor, statusBgColor, img, x, y)
 
 	if focused {
 		// draw input text and cursor
-		drawString(font, input.Get(edit.Index{1, 0}, input.End()), fgColorSDL,
-			statusBgColorSDL, dst, x, y)
+		drawString(font, input.Get(edit.Index{1, 0}, input.End()), fgColor,
+			statusBgColor, img, x, y)
 		index := input.IndexFromMark(insertMark)
-		dst.FillRect(&sdl.Rect{int32(x + fontWidth*index.Char), int32(y),
-			1, int32(font.Height())}, fgColor)
+		rect = image.Rect(x+fontWidth*index.Char, y,
+			x+fontWidth*index.Char+1, y+fontHeight)
+		draw.Draw(img, rect, &image.Uniform{fgColor}, image.ZP, draw.Src)
 	} else {
 		// draw cursor pos
 		index := pane.IndexFromMark(insertMark)
@@ -185,8 +176,8 @@ func drawStatusLine(dst *sdl.Surface, font *ttf.Font, s string,
 		if col != index.Char {
 			cursorPos += fmt.Sprintf("-%d", col)
 		}
-		drawString(font, cursorPos, fgColorSDL, statusBgColorSDL, dst,
-			int(dst.W)-padPx-fontWidth*17, int(dst.H)-font.Height()-padPx)
+		drawString(font, cursorPos, fgColor, statusBgColor, img,
+			imgSize.X-padPx-fontWidth*17, imgSize.Y-fontHeight-padPx)
 
 		// draw scroll percent
 		f := pane.ScrollFraction()
@@ -194,22 +185,22 @@ func drawStatusLine(dst *sdl.Surface, font *ttf.Font, s string,
 		if f < 0 {
 			scrollStr = "All"
 		}
-		drawString(font, scrollStr, fgColorSDL, statusBgColorSDL, dst,
-			int(dst.W)-padPx-fontWidth*4, int(dst.H)-font.Height()-padPx)
+		drawString(font, scrollStr, fgColor, statusBgColor, img,
+			imgSize.X-padPx-fontWidth*4, imgSize.Y-fontHeight-padPx)
 	}
 }
 
 // paneSpace returns the number of vertical pixels available to each pane,
 // sized equally out of n panes.
-func paneSpace(height, n int, font *ttf.Font) int {
-	return (height - font.Height() - padPx*2) / n
+func paneSpace(height, n int, font *truetype.Font) int {
+	return (height - fontHeight - padPx*2) / n
 }
 
 // bufSize returns the number of rows and columns available to each pane,
 // sized equally out of n panes.
-func bufSize(width, height, n int, font *ttf.Font) (cols, rows int) {
+func bufSize(width, height, n int, font *truetype.Font) (cols, rows int) {
 	cols = (width - padPx*2) / fontWidth
-	rows = paneSpace(height, n, font) / font.Height()
+	rows = paneSpace(height, n, font) / fontHeight
 	return
 }
 
@@ -219,19 +210,22 @@ type RenderContext struct {
 	Input  *edit.Buffer
 	Focus  *edit.Buffer
 	Status string
-	Font   *ttf.Font
-	Window *sdl.Window
+	Font   *truetype.Font
+	Window *xwindow.Window
 }
 
 // render updates the display.
 func render(rc *RenderContext) {
-	surf, err := rc.Window.GetSurface()
-	if err != nil {
+	xrect := rc.Window.Geom
+	img := xgraphics.New(rc.Window.X, image.Rect(xrect.X(), xrect.Y(),
+		xrect.X()+xrect.Width(), xrect.Y()+xrect.Height()))
+	draw.Draw(img, img.Bounds(), &image.Uniform{bgColor}, image.ZP, draw.Src)
+	paneFocused := rc.Focus == rc.Pane.Buffer
+	drawBuffer(rc.Pane, rc.Font, img, paneFocused)
+	drawStatusLine(img, rc.Font, rc.Status, rc.Input, rc.Pane, !paneFocused)
+	if err := img.XSurfaceSet(rc.Window.Id); err != nil {
 		log.Fatal(err)
 	}
-	surf.FillRect(&sdl.Rect{0, 0, surf.W, surf.H}, bgColor)
-	paneFocused := rc.Focus == rc.Pane.Buffer
-	drawBuffer(rc.Pane, rc.Font, surf, paneFocused)
-	drawStatusLine(surf, rc.Font, rc.Status, rc.Input, rc.Pane, !paneFocused)
-	rc.Window.UpdateSurface()
+	img.XDraw()
+	img.XPaint(rc.Window.Id)
 }

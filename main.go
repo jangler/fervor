@@ -1,18 +1,18 @@
 package main
 
 import (
+	"bytes"
 	"flag"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"os"
-	"runtime"
 	"strings"
-	"unsafe"
 
+	"code.google.com/p/jamslam-freetype-go/freetype/truetype"
+	"github.com/BurntSushi/xgbutil"
+	"github.com/BurntSushi/xgbutil/xgraphics"
 	"github.com/jangler/edit"
-	"github.com/veandco/go-sdl2/sdl"
-	"github.com/veandco/go-sdl2/sdl_ttf"
 )
 
 const (
@@ -21,17 +21,15 @@ const (
 )
 
 // getFont loads the default TTF from memory and returns it.
-func getFont() *ttf.Font {
+func getFont() *truetype.Font {
 	data, err := Asset("data/DejaVuSansMono.ttf")
 	if err != nil {
 		log.Fatal(err)
 	}
-	rw := sdl.RWFromMem(unsafe.Pointer(&data[0]), len(data))
-	font, err := ttf.OpenFontRW(rw, 1, 12)
+	font, err := xgraphics.ParseFont(bytes.NewBuffer(data))
 	if err != nil {
 		log.Fatal(err)
 	}
-	font.SetHinting(ttf.HINTING_MONO)
 	return font
 }
 
@@ -95,20 +93,13 @@ func main() {
 	initFlag()
 	log.SetFlags(log.Lshortfile)
 
-	runtime.LockOSThread()
-	sdl.Init(sdl.INIT_VIDEO)
-	defer sdl.Quit()
-	if err := ttf.Init(); err != nil {
-		log.Fatal(err)
-	}
-	defer ttf.Quit()
-
-	font := getFont()
-	var err error
-	fontWidth, _, err = font.SizeUTF8("0")
+	xu, err := xgbutil.NewConn()
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	font := getFont()
+	fontWidth, fontHeight = xgraphics.Extents(font, fontSize, "0")
 
 	var pane *Pane
 	var arg, status string
@@ -129,10 +120,13 @@ func main() {
 	pane.Mark(edit.Index{1, 0}, insertMark)
 	pane.Mark(edit.Index{1, 0}, selMark)
 
-	win := createWindow(arg, font)
+	win := createWindow(xu, font)
 	defer win.Destroy()
 
-	w, h := win.GetSize()
-	resize(pane, font, w, h)
+	if rect, err := win.Geometry(); err == nil {
+		resize(pane, font, rect.Width(), rect.Height())
+	} else {
+		log.Fatal(err)
+	}
 	eventLoop(pane, status, font, win)
 }
