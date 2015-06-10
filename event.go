@@ -14,10 +14,12 @@ import (
 )
 
 const (
-	openPrompt       = "Open: "
-	reallyOpenPrompt = "Really open (y/n)? "
-	reallyQuitPrompt = "Really quit (y/n)? "
-	saveAsPrompt     = "Save as: "
+	findBackwardPrompt = "Find backward: "
+	findForwardPrompt  = "Find forward: "
+	openPrompt         = "Open: "
+	reallyOpenPrompt   = "Really open (y/n)? "
+	reallyQuitPrompt   = "Really quit (y/n)? "
+	saveAsPrompt       = "Save as: "
 )
 
 var (
@@ -100,7 +102,7 @@ func clickFind(rc *RenderContext, shift bool, x, y int) {
 	selection := pane.Get(selIndex, insertIndex)
 
 	if shift { // search backwards
-		index, _ := selIndex, insertIndex
+		index := selIndex
 		text := pane.Get(edit.Index{1, 0}, index)
 		if pos := strings.LastIndex(text, selection); pos >= 0 {
 			pane.Mark(pane.ShiftIndex(index, pos-len(text)), selMark)
@@ -110,7 +112,7 @@ func clickFind(rc *RenderContext, shift bool, x, y int) {
 			rc.Status = "No backward match."
 		}
 	} else { // search forwards
-		_, index := selIndex, insertIndex
+		index := insertIndex
 		text := pane.Get(index, pane.End())
 		if pos := strings.Index(text, selection); pos >= 0 {
 			pane.Mark(pane.ShiftIndex(index, pos), selMark)
@@ -170,8 +172,7 @@ func resize(pane *Pane, font *ttf.Font, width, height int) {
 // negative value for n will shift backwards.
 func shiftIndexByWord(b *edit.Buffer, index edit.Index, n int) edit.Index {
 	for n > 0 {
-		// TODO
-		n--
+		panic("forward shift not implemented")
 	}
 	for n < 0 {
 		if index.Char == 0 {
@@ -217,11 +218,49 @@ func (rc *RenderContext) Prompt(s string) {
 	rc.Input.Delete(edit.Index{1, 0}, rc.Input.End())
 }
 
+// find attempts a regex search in the buffer.
+func find(rc *RenderContext, pattern string, forward bool) {
+	re, err := regexp.Compile(pattern)
+	if err != nil {
+		rc.Status = err.Error()
+		return
+	}
+
+	pane := rc.Pane
+	selIndex := pane.IndexFromMark(selMark)
+	insIndex := pane.IndexFromMark(insertMark)
+
+	if forward {
+		_, index := order(selIndex, insIndex)
+		text := pane.Get(index, pane.End())
+		if loc := re.FindStringIndex(text); loc != nil {
+			pane.Mark(pane.ShiftIndex(index, loc[0]), selMark)
+			pane.Mark(pane.ShiftIndex(index, loc[1]), insertMark)
+		} else {
+			rc.Status = "No forward match."
+		}
+	} else {
+		index, _ := order(selIndex, insIndex)
+		text := pane.Get(edit.Index{1, 0}, index)
+		if locs := re.FindAllStringIndex(text, -1); locs != nil {
+			loc := locs[len(locs)-1]
+			pane.Mark(pane.ShiftIndex(edit.Index{1, 0}, loc[0]), selMark)
+			pane.Mark(pane.ShiftIndex(edit.Index{1, 0}, loc[1]), insertMark)
+		} else {
+			rc.Status = "No backward match."
+		}
+	}
+}
+
 // EnterInput exits prompt mode, taking action based on the prompt string and
 // input text. Returns false if the application should quit.
 func (rc *RenderContext) EnterInput() bool {
 	input := rc.Input.Get(edit.Index{1, 0}, rc.Input.End())
 	switch rc.Status {
+	case findBackwardPrompt:
+		find(rc, input, false)
+	case findForwardPrompt:
+		find(rc, input, true)
 	case openPrompt:
 		rc.Pane.Delete(edit.Index{1, 0}, rc.Pane.End())
 		if contents, err := ioutil.ReadFile(input); err == nil {
@@ -416,6 +455,14 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					if event.Keysym.Mod&sdl.KMOD_SHIFT == 0 {
 						rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark),
 							selMark)
+					}
+				}
+			case sdl.K_f:
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+					if event.Keysym.Mod&sdl.KMOD_SHIFT != 0 {
+						rc.Prompt(findBackwardPrompt)
+					} else {
+						rc.Prompt(findForwardPrompt)
 					}
 				}
 			case sdl.K_h:
