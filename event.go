@@ -291,6 +291,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 	win.SetSize(w, h)
 	clickCount := 0
 	lastClick := time.Now()
+	var rightClickIndex edit.Index
 	for {
 		switch event := sdl.WaitEvent().(type) {
 		case *sdl.KeyDownEvent:
@@ -514,6 +515,9 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					lastClick = time.Now()
 					click(rc, int(event.X), int(event.Y), clickCount, shift)
 					render(rc)
+				} else if event.Button == sdl.BUTTON_RIGHT {
+					x, y := colRowFromXY(rc, int(event.X), int(event.Y))
+					rightClickIndex = rc.Pane.IndexFromCoords(x, y)
 				}
 			} else if event.Type == sdl.MOUSEBUTTONUP &&
 				event.Button == sdl.BUTTON_RIGHT {
@@ -526,6 +530,14 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 			if event.State&sdl.ButtonLMask() != 0 {
 				click(rc, int(event.X), int(event.Y), 1, true)
 				render(rc)
+			} else if event.State&sdl.ButtonRMask() != 0 {
+				x, y := colRowFromXY(rc, int(event.X), int(event.Y))
+				index := rc.Pane.IndexFromCoords(x, y)
+				if index != rightClickIndex {
+					rc.Pane.Mark(rightClickIndex, selMark)
+					rc.Pane.Mark(index, insertMark)
+					render(rc)
+				}
 			}
 		case *sdl.MouseWheelEvent:
 			rc.Pane.Scroll(int(event.Y) * -3)
