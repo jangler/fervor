@@ -324,6 +324,10 @@ func (rc *RenderContext) EnterInput() bool {
 			break
 		}
 	case openPrompt:
+		if input == "" {
+			rc.Status = rc.Pane.Title
+			break
+		}
 		rc.Pane.Delete(edit.Index{1, 0}, rc.Pane.End())
 		input = expandVars(input)
 		if contents, err := ioutil.ReadFile(input); err == nil {

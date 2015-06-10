@@ -113,7 +113,7 @@ func main() {
 
 	var pane *Pane
 	var arg, status string
-	if flag.NArg() == 0 {
+	if flag.NArg() == 0 || flag.Arg(0) == "" {
 		arg = os.DevNull
 	} else {
 		arg = flag.Arg(0)
