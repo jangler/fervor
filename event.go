@@ -382,6 +382,11 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					}
 					rc.Pane.Separate()
 				}
+			case sdl.K_ESCAPE:
+				if rc.Focus == rc.Input {
+					rc.Status = rc.Pane.Title
+					rc.Focus = rc.Pane.Buffer
+				}
 			case sdl.K_END:
 				index := rc.Focus.IndexFromMark(insertMark)
 				rc.Focus.Mark(edit.Index{index.Line, 2 << 30}, insertMark)

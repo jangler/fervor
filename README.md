@@ -37,8 +37,8 @@ Key bindings
 	Ctrl+Z        Undo
 
 Holding Shift makes any cursor motion select text from the previous cursor
-position to the resulting position. The Backspace, Delete, Home, End, PgUp, and
-PgDn keys should work as expected.
+position to the resulting position. The Backspace, Delete, Home, End, PgUp,
+PgDn, and Esc keys should also work as expected.
 
 Mouse bindings
 --------------
