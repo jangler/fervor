@@ -237,6 +237,7 @@ func (rc *RenderContext) EnterInput() bool {
 		rc.Pane.Mark(edit.Index{1, 0}, insertMark)
 		rc.Pane.Mark(edit.Index{1, 0}, selMark)
 		rc.Pane.Title = input
+		rc.Window.SetTitle(input)
 		rc.Pane.SetSyntax()
 		rc.Pane.ResetModified()
 	case reallyOpenPrompt:
