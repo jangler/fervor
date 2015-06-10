@@ -8,6 +8,8 @@ Installation
 ------------
 	go get -u github.com/jangler/fervor
 
+The SDL2 and SDL2\_ttf libraries are required.
+
 Usage
 -----
 	Usage: fervor [<file>]
