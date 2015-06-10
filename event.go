@@ -213,6 +213,8 @@ func saveFile(pane *Pane) error {
 
 // Prompt enters into prompt mode, prompting for input with the given string.
 func (rc *RenderContext) Prompt(s string) {
+	rc.Pane.ResetUndo()
+	rc.Pane.Separate()
 	rc.Status = s
 	rc.Focus = rc.Input
 	rc.Input.Delete(edit.Index{1, 0}, rc.Input.End())
@@ -224,6 +226,7 @@ func find(rc *RenderContext, forward bool) {
 		rc.Status = "No pattern to find."
 		return
 	}
+	rc.Status = rc.Pane.Title
 
 	pane := rc.Pane
 	selIndex := pane.IndexFromMark(selMark)
@@ -235,6 +238,7 @@ func find(rc *RenderContext, forward bool) {
 		if loc := rc.Regexp.FindStringIndex(text); loc != nil {
 			pane.Mark(pane.ShiftIndex(index, loc[0]), selMark)
 			pane.Mark(pane.ShiftIndex(index, loc[1]), insertMark)
+			pane.Separate()
 		} else {
 			rc.Status = "No forward match."
 		}
@@ -245,6 +249,7 @@ func find(rc *RenderContext, forward bool) {
 			loc := locs[len(locs)-1]
 			pane.Mark(pane.ShiftIndex(edit.Index{1, 0}, loc[0]), selMark)
 			pane.Mark(pane.ShiftIndex(edit.Index{1, 0}, loc[1]), insertMark)
+			pane.Separate()
 		} else {
 			rc.Status = "No backward match."
 		}
@@ -290,6 +295,7 @@ func (rc *RenderContext) EnterInput() bool {
 		rc.Window.SetTitle(input)
 		rc.Pane.SetSyntax()
 		rc.Pane.ResetModified()
+		rc.Pane.ResetUndo()
 	case reallyOpenPrompt:
 		if input == "y" || input == "yes" {
 			rc.Prompt(openPrompt)
@@ -374,6 +380,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 						rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark),
 							selMark)
 					}
+					rc.Pane.Separate()
 				}
 			case sdl.K_END:
 				index := rc.Focus.IndexFromMark(insertMark)
@@ -381,17 +388,26 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 				if event.Keysym.Mod&sdl.KMOD_SHIFT == 0 {
 					rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark), selMark)
 				}
+				if rc.Focus == rc.Pane.Buffer {
+					rc.Pane.Separate()
+				}
 			case sdl.K_LEFT:
 				index := rc.Focus.IndexFromMark(insertMark)
 				rc.Focus.Mark(rc.Focus.ShiftIndex(index, -1), insertMark)
 				if event.Keysym.Mod&sdl.KMOD_SHIFT == 0 {
 					rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark), selMark)
 				}
+				if rc.Focus == rc.Pane.Buffer {
+					rc.Pane.Separate()
+				}
 			case sdl.K_HOME:
 				index := rc.Focus.IndexFromMark(insertMark)
 				rc.Focus.Mark(edit.Index{index.Line, 0}, insertMark)
 				if event.Keysym.Mod&sdl.KMOD_SHIFT == 0 {
 					rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark), selMark)
+				}
+				if rc.Focus == rc.Pane.Buffer {
+					rc.Pane.Separate()
 				}
 			case sdl.K_PAGEDOWN:
 				if rc.Focus == rc.Pane.Buffer {
@@ -403,6 +419,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 						rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark),
 							selMark)
 					}
+					rc.Pane.Separate()
 				}
 			case sdl.K_PAGEUP:
 				if rc.Focus == rc.Pane.Buffer {
@@ -414,6 +431,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 						rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark),
 							selMark)
 					}
+					rc.Pane.Separate()
 				}
 			case sdl.K_RETURN:
 				if rc.Focus == rc.Pane.Buffer {
@@ -429,6 +447,9 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 				if event.Keysym.Mod&sdl.KMOD_SHIFT == 0 {
 					rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark), selMark)
 				}
+				if rc.Focus == rc.Pane.Buffer {
+					rc.Pane.Separate()
+				}
 			case sdl.K_TAB:
 				if rc.Focus == rc.Pane.Buffer {
 					textInput(rc.Focus, "\t")
@@ -443,6 +464,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 						rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark),
 							selMark)
 					}
+					rc.Pane.Separate()
 				}
 			case sdl.K_a:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
@@ -451,6 +473,9 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					if event.Keysym.Mod&sdl.KMOD_SHIFT == 0 {
 						rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark),
 							selMark)
+					}
+					if rc.Focus == rc.Pane.Buffer {
+						rc.Pane.Separate()
 					}
 				}
 			case sdl.K_c:
@@ -467,9 +492,13 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 						rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark),
 							selMark)
 					}
+					if rc.Focus == rc.Pane.Buffer {
+						rc.Pane.Separate()
+					}
 				}
 			case sdl.K_f:
-				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 &&
+					rc.Focus != rc.Input {
 					if event.Keysym.Mod&sdl.KMOD_SHIFT != 0 {
 						rc.Prompt(findBackwardPrompt)
 					} else {
@@ -490,10 +519,8 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					}
 				}
 			case sdl.K_o:
-				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
-					if rc.Focus != rc.Pane.Buffer {
-						break
-					}
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 &&
+					rc.Focus != rc.Input {
 					if rc.Pane.Modified() {
 						rc.Prompt(reallyOpenPrompt)
 					} else {
@@ -515,10 +542,8 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					}
 				}
 			case sdl.K_s:
-				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
-					if rc.Focus != rc.Pane.Buffer {
-						break
-					}
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 &&
+					rc.Focus != rc.Input {
 					if event.Keysym.Mod&sdl.KMOD_SHIFT != 0 {
 						rc.Prompt(saveAsPrompt)
 					} else {
@@ -558,6 +583,25 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					sdl.SetClipboardText(rc.Focus.Get(order(sel, insert)))
 					rc.Focus.Delete(order(sel, insert))
 				}
+
+			case sdl.K_y:
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+					if !rc.Pane.Redo(selMark, insertMark) {
+						rc.Status = "Nothing to redo."
+					}
+				}
+			case sdl.K_z:
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+					if event.Keysym.Mod&sdl.KMOD_SHIFT != 0 {
+						if !rc.Pane.Redo(selMark, insertMark) {
+							rc.Status = "Nothing to redo."
+						}
+					} else {
+						if !rc.Pane.Undo(selMark, insertMark) {
+							rc.Status = "Nothing to undo."
+						}
+					}
+				}
 			default:
 				recognized = false
 			}
@@ -592,6 +636,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 				warpMouseToSel(rc.Window, rc.Pane.Buffer, rc.Font.Height())
 				render(rc)
 			}
+			rc.Pane.Separate()
 		case *sdl.MouseMotionEvent:
 			if event.State&sdl.ButtonLMask() != 0 {
 				click(rc, int(event.X), int(event.Y), 1, true)

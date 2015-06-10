@@ -62,6 +62,7 @@ func openFile(path string) (*edit.Buffer, error) {
 		buf.Delete(buf.ShiftIndex(buf.End(), -1), buf.End())
 	}
 	buf.ResetModified()
+	buf.ResetUndo()
 	return buf, nil
 }
 
