@@ -119,18 +119,18 @@ func main() {
 		arg = flag.Arg(0)
 	}
 	if buf, err := openFile(arg); err == nil {
-		status = fmt.Sprintf(`Opened "%s".`, arg)
-		pane = &Pane{buf, arg, 4, 80, 25}
+		status = fmt.Sprintf(`Opened "%s".`, minPath(arg))
+		pane = &Pane{buf, minPath(arg), 4, 80, 25}
 	} else {
-		status = fmt.Sprintf(`New file: "%s".`, arg)
-		pane = &Pane{edit.NewBuffer(), arg, 4, 80, 25}
+		status = fmt.Sprintf(`New file: "%s".`, minPath(arg))
+		pane = &Pane{edit.NewBuffer(), minPath(arg), 4, 80, 25}
 	}
 	pane.SetTabWidth(4)
 	pane.SetSyntax()
 	pane.Mark(edit.Index{1, 0}, insertMark)
 	pane.Mark(edit.Index{1, 0}, selMark)
 
-	win := createWindow(arg, font)
+	win := createWindow(minPath(arg), font)
 	defer win.Destroy()
 
 	w, h := win.GetSize()

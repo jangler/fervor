@@ -4,6 +4,9 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"os"
+	"os/user"
+	"path/filepath"
 	"regexp"
 	"strings"
 	"time"
@@ -26,6 +29,32 @@ var (
 	spaceRegexp = regexp.MustCompile(`\s`) // matches whitespace characters
 	wordRegexp  = regexp.MustCompile(`\w`) // matches word characters
 )
+
+// minPath returns the shortest valid representation of the given file path.
+func minPath(path string) string {
+	if abs, err := filepath.Abs(path); err == nil {
+		path = abs
+	}
+	path = filepath.Clean(path)
+
+	if wd, err := os.Getwd(); err == nil {
+		if relWd, err := filepath.Rel(wd, path); err == nil {
+			if len(relWd) < len(path) {
+				path = relWd
+			}
+		}
+	}
+	if curUser, err := user.Current(); err == nil {
+		if relHome, err := filepath.Rel(curUser.HomeDir, path); err == nil {
+			relHome = "~/" + relHome
+			if len(relHome) < len(path) {
+				path = relHome
+			}
+		}
+	}
+
+	return path
+}
 
 // selectWord selects the word at the given index in the pane.
 func selectWord(pane *Pane, index edit.Index) {
@@ -204,7 +233,11 @@ func shiftIndexByWord(b *edit.Buffer, index edit.Index, n int) edit.Index {
 // title.
 func saveFile(pane *Pane) error {
 	text := pane.Get(edit.Index{1, 0}, pane.End()) + "\n"
-	err := ioutil.WriteFile(pane.Title, []byte(text), 0664)
+	path, err := filepath.Abs(expandVars(pane.Title))
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile(path, []byte(text), 0664)
 	if err == nil {
 		pane.ResetModified()
 	}
@@ -256,6 +289,19 @@ func find(rc *RenderContext, forward bool) {
 	}
 }
 
+// expandVars returns a version of path with environment variables expanded.
+func expandVars(path string) string {
+	for _, key := range os.Environ() {
+		substrings := strings.SplitN(key, "=", 2)
+		key, value := "$"+substrings[0], substrings[1]
+		path = strings.Replace(path, key, value, -1)
+	}
+	if curUser, err := user.Current(); err == nil {
+		path = strings.Replace(path, "~/", curUser.HomeDir+"/", -1)
+	}
+	return path
+}
+
 // EnterInput exits prompt mode, taking action based on the prompt string and
 // input text. Returns false if the application should quit.
 func (rc *RenderContext) EnterInput() bool {
@@ -279,20 +325,21 @@ func (rc *RenderContext) EnterInput() bool {
 		}
 	case openPrompt:
 		rc.Pane.Delete(edit.Index{1, 0}, rc.Pane.End())
+		input = expandVars(input)
 		if contents, err := ioutil.ReadFile(input); err == nil {
 			rc.Pane.Insert(edit.Index{1, 0}, string(contents))
 			penult := rc.Pane.ShiftIndex(rc.Pane.End(), -1)
 			if rc.Pane.Get(penult, rc.Pane.End()) == "\n" {
 				rc.Pane.Delete(penult, rc.Pane.End())
 			}
-			rc.Status = fmt.Sprintf(`Opened "%s".`, input)
+			rc.Status = fmt.Sprintf(`Opened "%s".`, minPath(input))
 		} else {
-			rc.Status = fmt.Sprintf(`New file: "%s".`, input)
+			rc.Status = fmt.Sprintf(`New file: "%s".`, minPath(input))
 		}
 		rc.Pane.Mark(edit.Index{1, 0}, insertMark)
 		rc.Pane.Mark(edit.Index{1, 0}, selMark)
-		rc.Pane.Title = input
-		rc.Window.SetTitle(input)
+		rc.Pane.Title = minPath(input)
+		rc.Window.SetTitle(rc.Pane.Title)
 		rc.Pane.SetSyntax()
 		rc.Pane.ResetModified()
 		rc.Pane.ResetUndo()
@@ -311,10 +358,12 @@ func (rc *RenderContext) EnterInput() bool {
 		}
 	case saveAsPrompt:
 		prevTitle := rc.Pane.Title
+		input = expandVars(input)
 		rc.Pane.Title = input
 		if err := saveFile(rc.Pane); err == nil {
-			rc.Status = fmt.Sprintf(`Saved "%s".`, input)
-			rc.Window.SetTitle(input)
+			rc.Pane.Title = minPath(input)
+			rc.Status = fmt.Sprintf(`Saved "%s".`, rc.Pane.Title)
+			rc.Window.SetTitle(rc.Pane.Title)
 			rc.Pane.SetSyntax()
 			rc.Pane.ResetModified()
 		} else {
@@ -458,6 +507,11 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 			case sdl.K_TAB:
 				if rc.Focus == rc.Pane.Buffer {
 					textInput(rc.Focus, "\t")
+				} else {
+					input := rc.Input.Get(edit.Index{1, 0}, rc.Input.End())
+					input = expandVars(input)
+					rc.Input.Delete(edit.Index{1, 0}, rc.Input.End())
+					rc.Input.Insert(edit.Index{1, 0}, input)
 				}
 			case sdl.K_UP:
 				if rc.Focus == rc.Pane.Buffer {
@@ -488,6 +542,13 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					sel := rc.Focus.IndexFromMark(selMark)
 					insert := rc.Focus.IndexFromMark(insertMark)
 					sdl.SetClipboardText(rc.Focus.Get(order(sel, insert)))
+				}
+			case sdl.K_d:
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+					if rc.Focus == rc.Input {
+						rc.Status = rc.Pane.Title
+						rc.Focus = rc.Pane.Buffer
+					}
 				}
 			case sdl.K_e:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {

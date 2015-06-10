@@ -18,6 +18,7 @@ Key bindings
 ------------
 	Ctrl+A        Home
 	Ctrl+C        Copy
+	Ctrl+D        Exit prompt
 	Ctrl+E        End
 	Ctrl+F        Find regexp...
 	Ctrl+Shift+F  Reverse find regexp...
