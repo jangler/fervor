@@ -219,10 +219,9 @@ func (rc *RenderContext) Prompt(s string) {
 }
 
 // find attempts a regex search in the buffer.
-func find(rc *RenderContext, pattern string, forward bool) {
-	re, err := regexp.Compile(pattern)
-	if err != nil {
-		rc.Status = err.Error()
+func find(rc *RenderContext, forward bool) {
+	if rc.Regexp == nil {
+		rc.Status = "No pattern to find."
 		return
 	}
 
@@ -233,7 +232,7 @@ func find(rc *RenderContext, pattern string, forward bool) {
 	if forward {
 		_, index := order(selIndex, insIndex)
 		text := pane.Get(index, pane.End())
-		if loc := re.FindStringIndex(text); loc != nil {
+		if loc := rc.Regexp.FindStringIndex(text); loc != nil {
 			pane.Mark(pane.ShiftIndex(index, loc[0]), selMark)
 			pane.Mark(pane.ShiftIndex(index, loc[1]), insertMark)
 		} else {
@@ -242,7 +241,7 @@ func find(rc *RenderContext, pattern string, forward bool) {
 	} else {
 		index, _ := order(selIndex, insIndex)
 		text := pane.Get(edit.Index{1, 0}, index)
-		if locs := re.FindAllStringIndex(text, -1); locs != nil {
+		if locs := rc.Regexp.FindAllStringIndex(text, -1); locs != nil {
 			loc := locs[len(locs)-1]
 			pane.Mark(pane.ShiftIndex(edit.Index{1, 0}, loc[0]), selMark)
 			pane.Mark(pane.ShiftIndex(edit.Index{1, 0}, loc[1]), insertMark)
@@ -258,9 +257,21 @@ func (rc *RenderContext) EnterInput() bool {
 	input := rc.Input.Get(edit.Index{1, 0}, rc.Input.End())
 	switch rc.Status {
 	case findBackwardPrompt:
-		find(rc, input, false)
+		if re, err := regexp.Compile(input); err == nil {
+			rc.Regexp = re
+			find(rc, false)
+		} else {
+			rc.Status = err.Error()
+			break
+		}
 	case findForwardPrompt:
-		find(rc, input, true)
+		if re, err := regexp.Compile(input); err == nil {
+			rc.Regexp = re
+			find(rc, true)
+		} else {
+			rc.Status = err.Error()
+			break
+		}
 	case openPrompt:
 		rc.Pane.Delete(edit.Index{1, 0}, rc.Pane.End())
 		if contents, err := ioutil.ReadFile(input); err == nil {
@@ -322,7 +333,7 @@ func warpMouseToSel(w *sdl.Window, b *edit.Buffer, fontHeight int) {
 // eventLoop handles SDL events until quit is requested.
 func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 	rc := &RenderContext{pane, edit.NewBuffer(), pane.Buffer, status, font,
-		win}
+		win, nil}
 	rc.Input.Mark(edit.Index{1, 0}, insertMark)
 	rc.Input.Mark(edit.Index{1, 0}, selMark)
 	render(rc)
@@ -469,6 +480,14 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
 					index := rc.Focus.IndexFromMark(insertMark)
 					rc.Focus.Delete(rc.Focus.ShiftIndex(index, -1), index)
+				}
+			case sdl.K_n:
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+					if event.Keysym.Mod&sdl.KMOD_SHIFT != 0 {
+						find(rc, false)
+					} else {
+						find(rc, true)
+					}
 				}
 			case sdl.K_o:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {

@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"regexp"
 
 	"github.com/jangler/edit"
 	"github.com/veandco/go-sdl2/sdl"
@@ -220,6 +221,7 @@ type RenderContext struct {
 	Status string
 	Font   *ttf.Font
 	Window *sdl.Window
+	Regexp *regexp.Regexp
 }
 
 // render updates the display.
