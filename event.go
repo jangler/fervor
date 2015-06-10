@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"regexp"
+	"strings"
 	"time"
 
 	"github.com/jangler/edit"
@@ -24,15 +25,37 @@ var (
 	wordRegexp  = regexp.MustCompile(`\w`) // matches word characters
 )
 
-// click processes a left mouse click at the given coordinates.
-func click(pane *Pane, win *sdl.Window, font *ttf.Font, x, y, times int,
-	shift bool) {
-	_, height := win.GetSize()
-	ps := paneSpace(height, 1, font)
+// selectWord selects the word at the given index in the pane.
+func selectWord(pane *Pane, index edit.Index) {
+	selIndex, insertIndex := index, index
+	for wordRegexp.MatchString(pane.Get(pane.ShiftIndex(selIndex, -1),
+		selIndex)) {
+		selIndex = pane.ShiftIndex(selIndex, -1)
+	}
+	for wordRegexp.MatchString(pane.Get(insertIndex,
+		pane.ShiftIndex(insertIndex, 1))) {
+		insertIndex = pane.ShiftIndex(insertIndex, 1)
+	}
+	pane.Mark(selIndex, selMark)
+	pane.Mark(insertIndex, insertMark)
+}
+
+// colRowFromXY converts (x, y) coordinates in a window to a row and column.
+func colRowFromXY(rc *RenderContext, x, y int) (col, row int) {
+	_, height := rc.Window.GetSize()
+	ps := paneSpace(height, 1, rc.Font)
 	y = y % ps
 	x -= padPx - fontWidth/2
-	y /= font.Height()
+	y /= rc.Font.Height()
 	x /= fontWidth
+	return x, y
+}
+
+// click processes a left mouse click at the given coordinates.
+func click(rc *RenderContext, x, y, times int, shift bool) {
+	pane := rc.Pane
+	x, y = colRowFromXY(rc, x, y)
+
 	switch times {
 	case 1: // place cursor
 		pane.Mark(pane.IndexFromCoords(x, y), insertMark)
@@ -40,22 +63,62 @@ func click(pane *Pane, win *sdl.Window, font *ttf.Font, x, y, times int,
 			pane.Mark(pane.IndexFromMark(insertMark), selMark)
 		}
 	case 2: // select word
-		selIndex := pane.IndexFromCoords(x, y)
-		insertIndex := selIndex
-		for wordRegexp.MatchString(pane.Get(pane.ShiftIndex(selIndex, -1),
-			selIndex)) {
-			selIndex = pane.ShiftIndex(selIndex, -1)
-		}
-		for wordRegexp.MatchString(pane.Get(insertIndex,
-			pane.ShiftIndex(insertIndex, 1))) {
-			insertIndex = pane.ShiftIndex(insertIndex, 1)
-		}
-		pane.Mark(selIndex, selMark)
-		pane.Mark(insertIndex, insertMark)
+		selectWord(pane, pane.IndexFromCoords(x, y))
 	case 3: // select line
 		index := pane.IndexFromCoords(x, y)
 		pane.Mark(edit.Index{index.Line, 0}, selMark)
 		pane.Mark(edit.Index{index.Line, 2 << 30}, insertMark)
+	}
+}
+
+// clickFind moves the cursor and selection to the next or previous instance of
+// the selected text.
+func clickFind(rc *RenderContext, shift bool, x, y int) {
+	pane := rc.Pane
+	x, y = colRowFromXY(rc, x, y)
+
+	// get selection
+	selIndex := pane.IndexFromMark(selMark)
+	insertIndex := pane.IndexFromMark(insertMark)
+	selIndex, insertIndex = order(selIndex, insertIndex)
+
+	// reposition cursor if click is outside selection
+	clickIndex := pane.IndexFromCoords(x, y)
+	if clickIndex.Less(selIndex) || insertIndex.Less(clickIndex) {
+		pane.Mark(clickIndex, selMark)
+		pane.Mark(clickIndex, insertMark)
+		selIndex = pane.IndexFromMark(selMark)
+		insertIndex = pane.IndexFromMark(insertMark)
+	}
+
+	// select word if selection is nil
+	if selIndex == insertIndex {
+		selectWord(pane, selIndex)
+		selIndex = pane.IndexFromMark(selMark)
+		insertIndex = pane.IndexFromMark(insertMark)
+	}
+	selection := pane.Get(selIndex, insertIndex)
+
+	if shift { // search backwards
+		index, _ := selIndex, insertIndex
+		text := pane.Get(edit.Index{1, 0}, index)
+		if pos := strings.LastIndex(text, selection); pos >= 0 {
+			pane.Mark(pane.ShiftIndex(index, pos-len(text)), selMark)
+			pane.Mark(pane.ShiftIndex(pane.IndexFromMark(selMark),
+				len(selection)), insertMark)
+		} else {
+			rc.Status = "No backward match."
+		}
+	} else { // search forwards
+		_, index := selIndex, insertIndex
+		text := pane.Get(index, pane.End())
+		if pos := strings.Index(text, selection); pos >= 0 {
+			pane.Mark(pane.ShiftIndex(index, pos), selMark)
+			pane.Mark(pane.ShiftIndex(pane.IndexFromMark(selMark),
+				len(selection)), insertMark)
+		} else {
+			rc.Status = "No forward match."
+		}
 	}
 }
 
@@ -204,6 +267,16 @@ func (rc *RenderContext) EnterInput() bool {
 	}
 	rc.Focus = rc.Pane.Buffer
 	return true
+}
+
+// warpMouseToSel warps the mouse to the center of the buffer selection.
+func warpMouseToSel(w *sdl.Window, b *edit.Buffer, fontHeight int) {
+	sel, ins := b.IndexFromMark(selMark), b.IndexFromMark(insertMark)
+	selCol, selRow := b.CoordsFromIndex(sel)
+	insCol, insRow := b.CoordsFromIndex(ins)
+	x := (float64(selCol)+float64(insCol))*float64(fontWidth)/2 + padPx
+	y := (float64(selRow)+float64(insRow)+1)*float64(fontHeight)/2 + padPx
+	w.WarpMouseInWindow(int(x), int(y))
 }
 
 // eventLoop handles SDL events until quit is requested.
@@ -425,23 +498,32 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 				render(rc)
 			}
 		case *sdl.MouseButtonEvent:
-			if event.Type == sdl.MOUSEBUTTONDOWN &&
-				event.Button == sdl.BUTTON_LEFT {
-				state := sdl.GetKeyboardState()
-				if time.Since(lastClick) < time.Second/4 {
-					clickCount = clickCount%3 + 1
-				} else {
-					clickCount = 1
+			if rc.Focus == rc.Pane.Buffer {
+				rc.Status = rc.Pane.Title
+			}
+			state := sdl.GetKeyboardState()
+			shift := state[sdl.SCANCODE_LSHIFT]|state[sdl.SCANCODE_RSHIFT] != 0
+			if event.Type == sdl.MOUSEBUTTONDOWN {
+				if event.Button == sdl.BUTTON_LEFT {
+					if time.Since(lastClick) < time.Second/4 {
+						clickCount = clickCount%3 + 1
+					} else {
+						clickCount = 1
+					}
+					lastClick = time.Now()
+					click(rc, int(event.X), int(event.Y), clickCount, shift)
+					render(rc)
 				}
-				lastClick = time.Now()
-				click(rc.Pane, win, font, int(event.X), int(event.Y),
-					clickCount,
-					state[sdl.SCANCODE_LSHIFT]|state[sdl.SCANCODE_RSHIFT] != 0)
+			} else if event.Type == sdl.MOUSEBUTTONUP &&
+				event.Button == sdl.BUTTON_RIGHT {
+				clickFind(rc, shift, int(event.X), int(event.Y))
+				rc.Pane.See(insertMark)
+				warpMouseToSel(rc.Window, rc.Pane.Buffer, rc.Font.Height())
 				render(rc)
 			}
 		case *sdl.MouseMotionEvent:
-			if event.State == sdl.ButtonLMask() {
-				click(rc.Pane, win, font, int(event.X), int(event.Y), 1, true)
+			if event.State&sdl.ButtonLMask() != 0 {
+				click(rc, int(event.X), int(event.Y), 1, true)
 				render(rc)
 			}
 		case *sdl.MouseWheelEvent:
