@@ -68,7 +68,7 @@ func openFile(path string) (*edit.Buffer, error) {
 
 // SetSyntax automatically sets the syntax rules for p.
 func (p *Pane) SetSyntax() {
-	if strings.HasSuffix(p.Title, ".c") {
+	if strings.HasSuffix(p.Title, ".c") || strings.HasSuffix(p.Title, ".h") {
 		p.Buffer.SetSyntax(cRules())
 	} else if strings.HasSuffix(p.Title, ".go") {
 		p.Buffer.SetSyntax(goRules())

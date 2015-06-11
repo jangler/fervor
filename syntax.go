@@ -88,7 +88,7 @@ func pythonRules() []edit.Rule {
 	}
 }
 
-// bashRules returns syntax highlighting rules for bash.
+// bashRules returns syntax highlighting rules for Bash.
 func bashRules() []edit.Rule {
 	// Not sure how "complete" this is. All the builtins are accounted for, but
 	// I might check out how other programs syntax highlight bash to see if
@@ -98,12 +98,12 @@ func bashRules() []edit.Rule {
 		mustCompile(`#.*$`, commentId),
 		mustCompile(`[!:.]| \[\[? | \]\]?|\b(alias|bg|bind|break|builtin|`+
 			`caller|case|cd|command|compgen|complete|compopt|continue|`+
-			`declare|dirs|disown|do|done|echo|enable|esac|eval|exec|exit|`+
-			`export|false|fc|fg|fi|for|function|getopts|hash|help|history|`+
-			`if|in|jobs|kill|let|local|logout|mapfile|popd|printf|pushd|`+
-			`pwd|read|readarray|readonly|return|select|set|shift|shopt|`+
-			`source|suspend|test|time|times|trap|true|type|typeset|ulimit|`+
-			`umask|unalias|unset|until|wait|while)\b`, keywordId),
+			`declare|dirs|disown|do|done|echo|elif|else|enable|esac|eval|`+
+			`exec|exit|export|false|fc|fg|fi|for|function|getopts|hash|help|`+
+			`history|if|in|jobs|kill|let|local|logout|mapfile|popd|printf|`+
+			`pushd|pwd|read|readarray|readonly|return|select|set|shift|shopt|`+
+			`source|suspend|test|then|time|times|trap|true|type|typeset|`+
+			`ulimit|umask|unalias|unset|until|wait|while)\b`, keywordId),
 		mustCompile(`\$?("(\\.|[^"])*?"|'(\\.|[^'])*?')`, literalId),
 		mustCompile("`(\\.|[^`])*?`", literalId),
 	}
