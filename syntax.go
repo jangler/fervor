@@ -70,6 +70,31 @@ func jsonRules() []edit.Rule {
 	}
 }
 
+// makefileRules returns syntax highlighting rules for makefiles.
+func makefileRules() []edit.Rule {
+	return []edit.Rule{
+		mustCompile(`#.*$`, commentId),
+		mustCompile(`\b(else|end[ei]f|ifn?def|ifn?eq|(-|s)?include|load|`+
+			`override|private|(un)?export|(un)?define|vpath)\b`, keywordId),
+		mustCompile(`\b(abspath|addprefix|(add)?suffix|and|basename|call|`+
+			`error|eval|file|filter(-out)?|findstring|firstword|flavor|`+
+			`foreach|guile|if|info|join|lastword|(not)?dir|or(igin)?|`+
+			`patsubst|realpath|shell|sort|strip|subst|value|warning|wildcard|`+
+			`word(s|list)?)\b`, keywordId),
+		mustCompile(`\b\.(DEFAULT|DELETE_ON_ERROR|EXPORT_ALL_VARIABLES|`+
+			`IGNORE|INTERMEDIATE|LOW_RESOLUTION_TIME|NOTPARALLEL|ONESHELL|`+
+			`PHONY|POSIX|PRECIOUS|SECONDARY|SECONDEXPANSION|SILENT|`+
+			`SUFFIXES)\b`, keywordId),
+		mustCompile(`\b(DEFAULT_GOAL|\.FEATURES|\.INCLUDE_DIRS|MAKEFILE_LIST|`+
+			`MAKE_RESTARTS|MAKE_TERMERR|MAKE_TERMOUT|\.RECIPEPREFIX|`+
+			`\.VARIABLES)\b`, keywordId),
+		mustCompile(`\b(CURDIR|MAKE(CMDGOALS|FILES|FLAGS|_HOST|LEVEL|`+
+			`\.LIBPATTERNS|SHELL|SUFFIXES|_VERSION)?|SHELL|VPATH)\b`,
+			keywordId),
+		mustCompile(`\$(\(.+\)|\{.+\}|.)`, literalId),
+	}
+}
+
 // pythonRules returns syntax highlighting rules for Python.
 func pythonRules() []edit.Rule {
 	return []edit.Rule{
