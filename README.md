@@ -19,8 +19,8 @@ Usage
 Key bindings
 ------------
 	Ctrl+A           Move cursor to beginning of line
-	Ctrl+C           Copy
-	Ctrl+D           Cancel prompt
+	Ctrl+C           Copy / cancel prompt
+	Ctrl+D           Change directory...
 	Ctrl+E           Move cursor to end of line
 	Ctrl+F           Find regexp forward...
 	Ctrl+Shift+F     Find regexp backward...
@@ -45,7 +45,7 @@ Key bindings
 	Ctrl+Home        Move cursor to beginning of buffer
 	Tab (in prompt)  Complete command name or file path
 
-Holding Shift makes any cursor motion select text from the previous cursor
+Holding Shift makes a cursor motion select text from the previous cursor
 position to the resulting position. Enter, Backspace, Delete, Home, End, PgUp,
 PgDn, Up, Down, Left, Right, Esc, Ctrl+Backspace, Ctrl+Delete, Ctrl+Home,
 Ctrl+End, Ctrl+Left, and Ctrl+Right should also work as expected.

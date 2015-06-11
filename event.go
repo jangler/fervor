@@ -22,6 +22,7 @@ import (
 )
 
 const (
+	cdPrompt            = "Change directory to: "
 	findBackwardPrompt  = "Find backward: "
 	findForwardPrompt   = "Find forward: "
 	goToLinePrompt      = "Go to line: "
@@ -335,6 +336,22 @@ func expandVars(path string) string {
 func (rc *RenderContext) EnterInput() bool {
 	input := rc.Input.Get(edit.Index{1, 0}, rc.Input.End())
 	switch rc.Status {
+	case cdPrompt:
+		input = expandVars(input)
+		if abs, err := filepath.Abs(input); err == nil {
+			input = abs
+		}
+		name := expandVars(rc.Pane.Title)
+		if abs, err := filepath.Abs(name); err == nil {
+			name = abs
+		}
+		if err := os.Chdir(input); err == nil {
+			rc.Status = fmt.Sprintf(`Working dir is "%s".`, input)
+			rc.Pane.Title = minPath(name)
+			rc.Window.SetTitle(rc.Pane.Title)
+		} else {
+			rc.Status = err.Error()
+		}
 	case findBackwardPrompt:
 		if re, err := regexp.Compile(input); err == nil {
 			rc.Regexp = re
@@ -641,16 +658,18 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 				} else {
 					input := rc.Input.Get(edit.Index{1, 0}, rc.Input.End())
 					input = expandVars(input)
-					if rc.Status == openPrompt || rc.Status == saveAsPrompt ||
-						rc.Status == openNewPrompt {
-						input = completePath(input)
-					} else if rc.Status == runPrompt {
+					switch rc.Status {
+					case cdPrompt:
+						input = completePath(input, true)
+					case openPrompt, openNewPrompt, saveAsPrompt:
+						input = completePath(input, false)
+					case runPrompt:
 						tokens := strings.Split(input, " ")
 						for i, token := range tokens {
 							if i == 0 {
 								tokens[i] = completeCmd(token)
 							} else {
-								tokens[i] = completePath(token)
+								tokens[i] = completePath(token, false)
 							}
 						}
 						input = strings.Join(tokens, " ")
@@ -684,16 +703,19 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 				}
 			case sdl.K_c:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
-					sel := rc.Focus.IndexFromMark(selMark)
-					insert := rc.Focus.IndexFromMark(insertMark)
-					sdl.SetClipboardText(rc.Focus.Get(order(sel, insert)))
-				}
-			case sdl.K_d:
-				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
 					if rc.Focus == rc.Input {
 						rc.Status = rc.Pane.Title
 						rc.Focus = rc.Pane.Buffer
+					} else {
+						sel := rc.Focus.IndexFromMark(selMark)
+						insert := rc.Focus.IndexFromMark(insertMark)
+						sdl.SetClipboardText(rc.Focus.Get(order(sel, insert)))
 					}
+				}
+			case sdl.K_d:
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 &&
+					rc.Focus != rc.Input {
+					rc.Prompt(cdPrompt)
 				}
 			case sdl.K_e:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {

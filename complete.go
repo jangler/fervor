@@ -6,9 +6,18 @@ import (
 	"strings"
 )
 
+// isDir returns true if and only if the given path represents a directory.
+func isDir(path string) bool {
+	if fi, err := os.Stat(path); err == nil {
+		return fi.IsDir()
+	} else {
+		return false
+	}
+}
+
 // completePath completes the typed path if there is exactly one match in the
 // directory.
-func completePath(path string) string {
+func completePath(path string, dirsOnly bool) string {
 	// read filenames from dir
 	absPath, err := filepath.Abs(path)
 	if err != nil {
@@ -28,7 +37,8 @@ func completePath(path string) string {
 	// return a match if there is exactly one
 	var match string
 	for _, name := range names {
-		if strings.HasPrefix(name, file) {
+		if strings.HasPrefix(name, file) &&
+			(!dirsOnly || isDir(filepath.Join(dir, name))) {
 			if match == "" {
 				match = name
 			} else {
