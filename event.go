@@ -32,19 +32,20 @@ var (
 
 // minPath returns the shortest valid representation of the given file path.
 func minPath(path string) string {
-	if abs, err := filepath.Abs(path); err == nil {
-		path = abs
+	abs, err := filepath.Abs(path)
+	if err != nil {
+		return path
 	}
 
 	if wd, err := os.Getwd(); err == nil {
-		if relWd, err := filepath.Rel(wd, path); err == nil {
+		if relWd, err := filepath.Rel(wd, abs); err == nil {
 			if len(relWd) < len(path) {
 				path = relWd
 			}
 		}
 	}
 	if curUser, err := user.Current(); err == nil {
-		if relHome, err := filepath.Rel(curUser.HomeDir, path); err == nil {
+		if relHome, err := filepath.Rel(curUser.HomeDir, abs); err == nil {
 			relHome = "~/" + relHome
 			if len(relHome) < len(path) {
 				path = relHome
@@ -311,11 +312,7 @@ func find(rc *RenderContext, forward bool) {
 
 // expandVars returns a version of path with environment variables expanded.
 func expandVars(path string) string {
-	for _, key := range os.Environ() {
-		substrings := strings.SplitN(key, "=", 2)
-		key, value := "$"+substrings[0], substrings[1]
-		path = strings.Replace(path, key, value, -1)
-	}
+	path = os.ExpandEnv(path)
 	if curUser, err := user.Current(); err == nil {
 		path = strings.Replace(path, "~/", curUser.HomeDir+"/", -1)
 	}
