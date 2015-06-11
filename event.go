@@ -514,6 +514,9 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 				} else {
 					input := rc.Input.Get(edit.Index{1, 0}, rc.Input.End())
 					input = expandVars(input)
+					if rc.Status == openPrompt || rc.Status == saveAsPrompt {
+						input = completePath(input)
+					}
 					rc.Input.Delete(edit.Index{1, 0}, rc.Input.End())
 					rc.Input.Insert(edit.Index{1, 0}, input)
 				}
