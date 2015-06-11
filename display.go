@@ -167,7 +167,7 @@ func drawStatusLine(dst *sdl.Surface, font *ttf.Font, s string,
 		index := input.IndexFromMark(insertMark)
 		dst.FillRect(&sdl.Rect{int32(x + fontWidth*index.Char), int32(y),
 			1, int32(font.Height())}, fgColor)
-	} else {
+	} else if s == pane.Title {
 		// draw cursor pos
 		index := pane.IndexFromMark(insertMark)
 		line := pane.Get(edit.Index{index.Line, 0}, index)
