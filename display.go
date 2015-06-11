@@ -234,6 +234,7 @@ func render(rc *RenderContext) {
 		if err := recover(); err != nil {
 			log.Print(err)
 			rc.Font = getFont()
+			render(rc)
 		}
 	}()
 	drawBuffer(rc.Pane, rc.Font, surf, paneFocused)
