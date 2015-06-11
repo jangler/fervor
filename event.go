@@ -35,7 +35,6 @@ func minPath(path string) string {
 	if abs, err := filepath.Abs(path); err == nil {
 		path = abs
 	}
-	path = filepath.Clean(path)
 
 	if wd, err := os.Getwd(); err == nil {
 		if relWd, err := filepath.Rel(wd, path); err == nil {
@@ -53,7 +52,7 @@ func minPath(path string) string {
 		}
 	}
 
-	return path
+	return filepath.Clean(path)
 }
 
 // selectWord selects the word at the given index in the pane.
