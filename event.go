@@ -11,6 +11,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 	"unsafe"
@@ -23,6 +24,7 @@ import (
 const (
 	findBackwardPrompt  = "Find backward: "
 	findForwardPrompt   = "Find forward: "
+	goToLinePrompt      = "Go to line: "
 	openPrompt          = "Open: "
 	openNewPrompt       = "Open in new window: "
 	reallyOpenPrompt    = "Really open (y/n)? "
@@ -339,7 +341,6 @@ func (rc *RenderContext) EnterInput() bool {
 			find(rc, false)
 		} else {
 			rc.Status = err.Error()
-			break
 		}
 	case findForwardPrompt:
 		if re, err := regexp.Compile(input); err == nil {
@@ -347,7 +348,14 @@ func (rc *RenderContext) EnterInput() bool {
 			find(rc, true)
 		} else {
 			rc.Status = err.Error()
-			break
+		}
+	case goToLinePrompt:
+		if n, err := strconv.ParseInt(input, 0, 0); err == nil {
+			rc.Status = rc.Pane.Title
+			rc.Pane.Mark(edit.Index{int(n), 0}, selMark)
+			rc.Pane.Mark(edit.Index{int(n), 2 << 30}, insertMark)
+		} else {
+			rc.Status = err.Error()
 		}
 	case openPrompt:
 		if input == "" {
@@ -707,6 +715,11 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					} else {
 						rc.Prompt(findForwardPrompt)
 					}
+				}
+			case sdl.K_g:
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 &&
+					rc.Focus != rc.Input {
+					rc.Prompt(goToLinePrompt)
 				}
 			case sdl.K_h:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
