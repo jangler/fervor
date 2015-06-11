@@ -81,7 +81,7 @@ func drawBuffer(pane *Pane, font *ttf.Font, dst *sdl.Surface, focused bool) {
 		c := 0
 		for e := line.Front(); e != nil; e = e.Next() {
 			text := e.Value.(edit.Fragment).Text
-			var fg sdl.Color
+			fg := fgColorSDL
 			switch e.Value.(edit.Fragment).Tag {
 			case commentId:
 				fg = commentColor
@@ -89,8 +89,6 @@ func drawBuffer(pane *Pane, font *ttf.Font, dst *sdl.Surface, focused bool) {
 				fg = keywordColor
 			case literalId:
 				fg = literalColor
-			default:
-				fg = fgColorSDL
 			}
 			if i >= startRow && i <= endRow {
 				var pre, mid, post string
@@ -133,7 +131,7 @@ func drawString(font *ttf.Font, s string, fg, bg sdl.Color, dst *sdl.Surface,
 	if s != "" {
 		surf, err := font.RenderUTF8_Shaded(s, fg, bg)
 		if err != nil {
-			log.Fatal(err, s)
+			panic(err)
 		}
 		defer surf.Free()
 		err = surf.Blit(&sdl.Rect{0, 0, surf.W, surf.H}, dst,
@@ -232,6 +230,12 @@ func render(rc *RenderContext) {
 	}
 	surf.FillRect(&sdl.Rect{0, 0, surf.W, surf.H}, bgColor)
 	paneFocused := rc.Focus == rc.Pane.Buffer
+	defer func() {
+		if err := recover(); err != nil {
+			log.Print(err)
+			rc.Font = getFont()
+		}
+	}()
 	drawBuffer(rc.Pane, rc.Font, surf, paneFocused)
 	drawStatusLine(surf, rc.Font, rc.Status, rc.Input, rc.Pane, !paneFocused)
 	rc.Window.UpdateSurface()
