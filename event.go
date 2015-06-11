@@ -200,7 +200,28 @@ func resize(pane *Pane, font *ttf.Font, width, height int) {
 // negative value for n will shift backwards.
 func shiftIndexByWord(b *edit.Buffer, index edit.Index, n int) edit.Index {
 	for n > 0 {
-		panic("forward shift not implemented")
+		text := []rune(b.Get(index, edit.Index{index.Line, 2 << 30}))
+		if len(text) == 0 {
+			index = b.ShiftIndex(index, 1)
+		} else {
+			i := 0
+			for i < len(text) && spaceRegexp.MatchString(string(text[i])) {
+				i++
+			}
+			if i < len(text) && wordRegexp.MatchString(string(text[i])) {
+				for i < len(text) && wordRegexp.MatchString(string(text[i])) {
+					i++
+				}
+			} else {
+				for i < len(text) &&
+					!wordRegexp.MatchString(string(text[i])) &&
+					!spaceRegexp.MatchString(string(text[i])) {
+					i++
+				}
+			}
+			index.Char += i
+		}
+		n--
 	}
 	for n < 0 {
 		if index.Char == 0 {
@@ -409,18 +430,30 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 			recognized := true
 			switch event.Keysym.Sym {
 			case sdl.K_BACKSPACE:
-				index := rc.Focus.IndexFromMark(insertMark)
-				if sel := rc.Focus.IndexFromMark(selMark); sel != index {
-					rc.Focus.Delete(order(sel, index))
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+					end := rc.Focus.IndexFromMark(insertMark)
+					begin := shiftIndexByWord(rc.Focus, end, -1)
+					rc.Focus.Delete(begin, end)
 				} else {
-					rc.Focus.Delete(rc.Focus.ShiftIndex(index, -1), index)
+					index := rc.Focus.IndexFromMark(insertMark)
+					if sel := rc.Focus.IndexFromMark(selMark); sel != index {
+						rc.Focus.Delete(order(sel, index))
+					} else {
+						rc.Focus.Delete(rc.Focus.ShiftIndex(index, -1), index)
+					}
 				}
 			case sdl.K_DELETE:
-				index := rc.Focus.IndexFromMark(insertMark)
-				if sel := rc.Focus.IndexFromMark(selMark); sel != index {
-					rc.Focus.Delete(order(sel, index))
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+					begin := rc.Focus.IndexFromMark(insertMark)
+					end := shiftIndexByWord(rc.Focus, begin, 1)
+					rc.Focus.Delete(begin, end)
 				} else {
-					rc.Focus.Delete(index, rc.Focus.ShiftIndex(index, 1))
+					index := rc.Focus.IndexFromMark(insertMark)
+					if sel := rc.Focus.IndexFromMark(selMark); sel != index {
+						rc.Focus.Delete(order(sel, index))
+					} else {
+						rc.Focus.Delete(index, rc.Focus.ShiftIndex(index, 1))
+					}
 				}
 			case sdl.K_DOWN:
 				if rc.Focus == rc.Pane.Buffer {
@@ -440,8 +473,12 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					rc.Focus = rc.Pane.Buffer
 				}
 			case sdl.K_END:
-				index := rc.Focus.IndexFromMark(insertMark)
-				rc.Focus.Mark(edit.Index{index.Line, 2 << 30}, insertMark)
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+					rc.Focus.Mark(rc.Focus.End(), insertMark)
+				} else {
+					index := rc.Focus.IndexFromMark(insertMark)
+					rc.Focus.Mark(edit.Index{index.Line, 2 << 30}, insertMark)
+				}
 				if event.Keysym.Mod&sdl.KMOD_SHIFT == 0 {
 					rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark), selMark)
 				}
@@ -449,8 +486,14 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					rc.Pane.Separate()
 				}
 			case sdl.K_LEFT:
-				index := rc.Focus.IndexFromMark(insertMark)
-				rc.Focus.Mark(rc.Focus.ShiftIndex(index, -1), insertMark)
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+					index := rc.Focus.IndexFromMark(insertMark)
+					index = shiftIndexByWord(rc.Focus, index, -1)
+					rc.Focus.Mark(index, insertMark)
+				} else {
+					index := rc.Focus.IndexFromMark(insertMark)
+					rc.Focus.Mark(rc.Focus.ShiftIndex(index, -1), insertMark)
+				}
 				if event.Keysym.Mod&sdl.KMOD_SHIFT == 0 {
 					rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark), selMark)
 				}
@@ -458,8 +501,12 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					rc.Pane.Separate()
 				}
 			case sdl.K_HOME:
-				index := rc.Focus.IndexFromMark(insertMark)
-				rc.Focus.Mark(edit.Index{index.Line, 0}, insertMark)
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+					rc.Focus.Mark(edit.Index{1, 0}, insertMark)
+				} else {
+					index := rc.Focus.IndexFromMark(insertMark)
+					rc.Focus.Mark(edit.Index{index.Line, 0}, insertMark)
+				}
 				if event.Keysym.Mod&sdl.KMOD_SHIFT == 0 {
 					rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark), selMark)
 				}
@@ -499,8 +546,14 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					}
 				}
 			case sdl.K_RIGHT:
-				index := rc.Focus.IndexFromMark(insertMark)
-				rc.Focus.Mark(rc.Focus.ShiftIndex(index, 1), insertMark)
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+					index := rc.Focus.IndexFromMark(insertMark)
+					index = shiftIndexByWord(rc.Focus, index, 1)
+					rc.Focus.Mark(index, insertMark)
+				} else {
+					index := rc.Focus.IndexFromMark(insertMark)
+					rc.Focus.Mark(rc.Focus.ShiftIndex(index, 1), insertMark)
+				}
 				if event.Keysym.Mod&sdl.KMOD_SHIFT == 0 {
 					rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark), selMark)
 				}
