@@ -45,3 +45,30 @@ func completePath(path string) string {
 	}
 	return minPath(path)
 }
+
+// completeCmd completes the typed command name if there is exactly one match
+// in $PATH.
+func completeCmd(exe string) string {
+	paths := strings.Split(os.Getenv("PATH"), ":")
+	var match string
+	for _, path := range paths {
+		if f, err := os.Open(path); err == nil {
+			if names, err := f.Readdirnames(0); err == nil {
+				for _, name := range names {
+					if strings.HasPrefix(name, exe) {
+						if match == "" {
+							match = name
+						} else {
+							return exe
+						}
+					}
+				}
+			}
+			f.Close()
+		}
+	}
+	if match != "" {
+		return match
+	}
+	return exe
+}

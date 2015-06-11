@@ -42,7 +42,7 @@ Key bindings
 	Ctrl+Z           Undo
 	Ctrl+End         Move cursor to end of buffer
 	Ctrl+Home        Move cursor to beginning of buffer
-	Tab (in prompt)  Expand environment variables
+	Tab (in prompt)  Complete command name or file path
 
 Holding Shift makes any cursor motion select text from the previous cursor
 position to the resulting position. Enter, Backspace, Delete, Home, End, PgUp,

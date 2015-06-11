@@ -636,6 +636,16 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					if rc.Status == openPrompt || rc.Status == saveAsPrompt ||
 						rc.Status == openNewPrompt {
 						input = completePath(input)
+					} else if rc.Status == runPrompt {
+						tokens := strings.Split(input, " ")
+						for i, token := range tokens {
+							if i == 0 {
+								tokens[i] = completeCmd(token)
+							} else {
+								tokens[i] = completePath(token)
+							}
+						}
+						input = strings.Join(tokens, " ")
 					}
 					rc.Input.Delete(edit.Index{1, 0}, rc.Input.End())
 					rc.Input.Insert(edit.Index{1, 0}, input)
