@@ -2,8 +2,10 @@ package main
 
 import (
 	"bytes"
+	"encoding/base32"
 	"fmt"
 	"io/ioutil"
+	"math/rand"
 	"os"
 	"os/exec"
 	"os/user"
@@ -11,6 +13,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
+	"unsafe"
 
 	"github.com/jangler/edit"
 	"github.com/veandco/go-sdl2/sdl"
@@ -25,6 +28,7 @@ const (
 	reallyOpenPrompt    = "Really open (y/n)? "
 	reallyOpenNewPrompt = "Really open in new window (y/n)? "
 	reallyQuitPrompt    = "Really quit (y/n)? "
+	runPrompt           = "Run: "
 	saveAsPrompt        = "Save as: "
 )
 
@@ -32,6 +36,8 @@ var (
 	spaceRegexp = regexp.MustCompile(`\s`) // matches whitespace characters
 	wordRegexp  = regexp.MustCompile(`\w`) // matches word characters
 )
+
+var userEventType uint32 // set at beginning of event loop
 
 // minPath returns the shortest valid representation of the given file path.
 func minPath(path string) string {
@@ -394,6 +400,51 @@ func (rc *RenderContext) EnterInput() bool {
 		} else {
 			rc.Status = rc.Pane.Title
 		}
+	case runPrompt:
+		rc.Status = rc.Pane.Title
+		if input == "" {
+			break
+		}
+		// TODO: what command interpreter to use on windows?
+		cmd := exec.Command("/bin/sh", "-c", input)
+
+		go func() {
+			output, err := cmd.CombinedOutput()
+
+			// report exit status
+			var event sdl.UserEvent
+			var msg string
+			if err == nil {
+				msg = fmt.Sprintf(`Command "%s" exited successfully.`, input)
+			} else {
+				msg = fmt.Sprintf(`Command "%s" exited with error: %v`,
+					input, err)
+			}
+			event.Type, event.Data1 = userEventType, unsafe.Pointer(&msg)
+			sdl.PushEvent(&event)
+
+			if output != nil && len(output) > 0 {
+				// generate a random filename
+				src := make([]byte, 8)
+				for i := range src {
+					src[i] = byte(rand.Intn(256))
+				}
+				name := base32.StdEncoding.EncodeToString(src)
+
+				// write command output to temp file
+				path := filepath.Join(os.TempDir(), name)
+				file, err := os.Create(path)
+				if err != nil {
+					return
+				}
+				file.Write(output)
+				file.Close()
+
+				// open temp file in new window, then clean up
+				exec.Command(os.Args[0], path).Run()
+				defer os.Remove(path)
+			}
+		}()
 	case saveAsPrompt:
 		prevTitle := rc.Pane.Title
 		input = expandVars(input)
@@ -425,6 +476,8 @@ func warpMouseToSel(w *sdl.Window, b *edit.Buffer, fontHeight int) {
 
 // eventLoop handles SDL events until quit is requested.
 func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
+	rand.Seed(time.Now().UnixNano())
+	userEventType = sdl.RegisterEvents(1)
 	rc := &RenderContext{pane, edit.NewBuffer(), pane.Buffer, status, font,
 		win, nil}
 	rc.Input.Mark(edit.Index{1, 0}, insertMark)
@@ -689,6 +742,11 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 						rc.Focus = rc.Pane.Buffer
 					}
 				}
+			case sdl.K_r:
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 &&
+					rc.Focus != rc.Input {
+					rc.Prompt(runPrompt)
+				}
 			case sdl.K_s:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 &&
 					rc.Focus != rc.Input {
@@ -806,6 +864,11 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 		case *sdl.TextInputEvent:
 			if n := bytes.Index(event.Text[:], []byte{0}); n > 0 {
 				textInput(rc.Focus, string(event.Text[:n]))
+				render(rc)
+			}
+		case *sdl.UserEvent:
+			if rc.Focus != rc.Input {
+				rc.Status = *(*string)(event.Data1)
 				render(rc)
 			}
 		case *sdl.WindowEvent:
