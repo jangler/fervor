@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"os/user"
 	"path/filepath"
 	"regexp"
@@ -17,12 +18,14 @@ import (
 )
 
 const (
-	findBackwardPrompt = "Find backward: "
-	findForwardPrompt  = "Find forward: "
-	openPrompt         = "Open: "
-	reallyOpenPrompt   = "Really open (y/n)? "
-	reallyQuitPrompt   = "Really quit (y/n)? "
-	saveAsPrompt       = "Save as: "
+	findBackwardPrompt  = "Find backward: "
+	findForwardPrompt   = "Find forward: "
+	openPrompt          = "Open: "
+	openNewPrompt       = "Open in new window: "
+	reallyOpenPrompt    = "Really open (y/n)? "
+	reallyOpenNewPrompt = "Really open in new window (y/n)? "
+	reallyQuitPrompt    = "Really quit (y/n)? "
+	saveAsPrompt        = "Save as: "
 )
 
 var (
@@ -364,9 +367,23 @@ func (rc *RenderContext) EnterInput() bool {
 		rc.Pane.SetSyntax()
 		rc.Pane.ResetModified()
 		rc.Pane.ResetUndo()
+	case openNewPrompt:
+		cmd := exec.Command(os.Args[0], expandVars(input))
+		if err := cmd.Start(); err == nil {
+			rc.Status = rc.Pane.Title
+		} else {
+			rc.Status = err.Error()
+		}
 	case reallyOpenPrompt:
 		if input == "y" || input == "yes" {
 			rc.Prompt(openPrompt)
+			return true // so that main buffer isn't focused
+		} else {
+			rc.Status = rc.Pane.Title
+		}
+	case reallyOpenNewPrompt:
+		if input == "y" || input == "yes" {
+			rc.Prompt(openNewPrompt)
 			return true // so that main buffer isn't focused
 		} else {
 			rc.Status = rc.Pane.Title
@@ -563,7 +580,8 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 				} else {
 					input := rc.Input.Get(edit.Index{1, 0}, rc.Input.End())
 					input = expandVars(input)
-					if rc.Status == openPrompt || rc.Status == saveAsPrompt {
+					if rc.Status == openPrompt || rc.Status == saveAsPrompt ||
+						rc.Status == openNewPrompt {
 						input = completePath(input)
 					}
 					rc.Input.Delete(edit.Index{1, 0}, rc.Input.End())
@@ -643,10 +661,18 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 			case sdl.K_o:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 &&
 					rc.Focus != rc.Input {
-					if rc.Pane.Modified() {
-						rc.Prompt(reallyOpenPrompt)
+					if event.Keysym.Mod&sdl.KMOD_SHIFT != 0 {
+						if rc.Pane.Modified() {
+							rc.Prompt(reallyOpenNewPrompt)
+						} else {
+							rc.Prompt(openNewPrompt)
+						}
 					} else {
-						rc.Prompt(openPrompt)
+						if rc.Pane.Modified() {
+							rc.Prompt(reallyOpenPrompt)
+						} else {
+							rc.Prompt(openPrompt)
+						}
 					}
 				}
 			case sdl.K_q:

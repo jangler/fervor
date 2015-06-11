@@ -28,6 +28,7 @@ Key bindings
 	Ctrl+N           Next match
 	Ctrl+Shift+N     Previous match
 	Ctrl+O           Open...
+	Ctrl+Shift+O     Open in new window...
 	Ctrl+Q           Quit
 	Ctrl+Shift+Q     Force quit
 	Ctrl+S           Save
