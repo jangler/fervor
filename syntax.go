@@ -16,6 +16,27 @@ const (
 	literalId
 )
 
+// cRules returns syntax highlighting rules for C.
+func cRules() []edit.Rule {
+	return []edit.Rule{
+		mustCompile(`^#(define|undef|include|if|elif|else|endif|ifdef|ifndef|`+
+			`line|pragma).*$`, commentId),
+		mustCompile(`//.+?$`, commentId),
+		mustCompile(`/\*.*?\*/`, commentId),
+		mustCompile(`\b(auto|break|case|char|const|continue|default|do|`+
+			`double|else|enum|extern|float|for|goto|if|inline|int|long|`+
+			`register|restrict|return|short|signed|sizeof|static|struct|`+
+			`switch|typedef|union|unsigned|void|volatile|while|_Bool|`+
+			`_Complex|_Imaginary)\b`, keywordId),
+		mustCompile(`\b(bool|true|false|NULL)\b`, literalId),
+		mustCompile(`L?'(\\.|[^'])*?'|"(\\.|[^"])*?"`, literalId),
+		mustCompile(`\b(\d+\.\d*|\d*\.\d+|\d+)([eEpP][+-]?\d+)?`+
+			`[fFlL]?\b`, literalId),
+		mustCompile(`\b(0([bB][01]+|[0-7]+|[xX][0-9a-fA-F]+)|\d+)`+
+			`([uU]?[lL]?|[lL]?[uU]?)\b`, literalId),
+	}
+}
+
 // goRules returns syntax highlighting rules for Go.
 func goRules() []edit.Rule {
 	return []edit.Rule{
