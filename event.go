@@ -298,7 +298,7 @@ func saveFile(pane *Pane) error {
 
 // Prompt enters into prompt mode, prompting for input with the given string.
 func (rc *RenderContext) Prompt(s string) {
-	rc.Pane.ResetUndo()
+	rc.Input.ResetUndo()
 	rc.Pane.Separate()
 	rc.Status = s
 	rc.Focus = rc.Input
