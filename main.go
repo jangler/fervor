@@ -76,8 +76,6 @@ func (p *Pane) SetSyntax() {
 		p.Buffer.SetSyntax(jsonRules())
 	} else if strings.ToLower(p.Title) == "makefile" {
 		p.Buffer.SetSyntax(makefileRules())
-	} else if strings.HasSuffix(p.Title, ".md") {
-		p.Buffer.SetSyntax(markdownRules())
 	} else if strings.HasSuffix(p.Title, ".py") {
 		p.Buffer.SetSyntax(pythonRules())
 	} else if strings.HasSuffix(p.Title, ".sh") {

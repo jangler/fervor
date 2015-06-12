@@ -95,26 +95,6 @@ func makefileRules() []edit.Rule {
 	}
 }
 
-// markdownRules returns syntax highlighting rules for Markdown.
-func markdownRules() []edit.Rule {
-	// TODO: include rules for inline HTML
-	// TODO: allow syntax elements inside block quotes
-	// TODO: fix edge cases such as backslash-escaped elements
-	return []edit.Rule{
-		mustCompile(`^#{1,6}`, keywordId),
-		mustCompile(`^([*=-] ?){3,}$`, keywordId),
-		mustCompile(`^[=-]+`, keywordId),
-		mustCompile(`^ *[*+-] +`, keywordId),
-		mustCompile(`^\d+\.`, keywordId),
-		mustCompile(`>( .*|$)`, literalId),
-		mustCompile(`(    |\t).+`, literalId),
-		mustCompile(`!?\[.+?\](\(.+?\))?`, literalId),
-		mustCompile(`(\*\*.+?\*\*|__.+?__|\*.+?\*|_.+?_)`, literalId),
-		mustCompile("``.+?``|`.+?`", literalId),
-		mustCompile(`<.+?>`, literalId),
-	}
-}
-
 // pythonRules returns syntax highlighting rules for Python.
 func pythonRules() []edit.Rule {
 	return []edit.Rule{
