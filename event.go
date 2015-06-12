@@ -118,7 +118,7 @@ func click(rc *RenderContext, x, y, times int, shift bool) {
 	case 3: // select line
 		index := pane.IndexFromCoords(x, y)
 		pane.Mark(edit.Index{index.Line, 0}, selMark)
-		pane.Mark(edit.Index{index.Line, 2 << 30}, insertMark)
+		pane.Mark(edit.Index{index.Line, 1 << 30}, insertMark)
 	}
 }
 
@@ -221,7 +221,7 @@ func resize(pane *Pane, font *ttf.Font, width, height int) {
 // negative value for n will shift backwards.
 func shiftIndexByWord(b *edit.Buffer, index edit.Index, n int) edit.Index {
 	for n > 0 {
-		text := []rune(b.Get(index, edit.Index{index.Line, 2 << 30}))
+		text := []rune(b.Get(index, edit.Index{index.Line, 1 << 30}))
 		if len(text) == 0 {
 			index = b.ShiftIndex(index, 1)
 		} else {
@@ -400,7 +400,7 @@ func (rc *RenderContext) EnterInput() bool {
 		if n, err := strconv.ParseInt(input, 0, 0); err == nil {
 			rc.Status = rc.Pane.Title
 			rc.Pane.Mark(edit.Index{int(n), 0}, selMark)
-			rc.Pane.Mark(edit.Index{int(n), 2 << 30}, insertMark)
+			rc.Pane.Mark(edit.Index{int(n), 1 << 30}, insertMark)
 		} else {
 			rc.Status = err.Error()
 		}
@@ -638,7 +638,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					rc.Focus.Mark(rc.Focus.End(), insertMark)
 				} else {
 					index := rc.Focus.IndexFromMark(insertMark)
-					rc.Focus.Mark(edit.Index{index.Line, 2 << 30}, insertMark)
+					rc.Focus.Mark(edit.Index{index.Line, 1 << 30}, insertMark)
 				}
 				if event.Keysym.Mod&sdl.KMOD_SHIFT == 0 {
 					rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark), selMark)
@@ -788,7 +788,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 			case sdl.K_e:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
 					index := rc.Focus.IndexFromMark(insertMark)
-					rc.Focus.Mark(edit.Index{index.Line, 2 << 30}, insertMark)
+					rc.Focus.Mark(edit.Index{index.Line, 1 << 30}, insertMark)
 					if event.Keysym.Mod&sdl.KMOD_SHIFT == 0 {
 						rc.Focus.Mark(rc.Focus.IndexFromMark(insertMark),
 							selMark)

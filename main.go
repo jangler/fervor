@@ -83,7 +83,7 @@ func (p *Pane) SetSyntax() {
 	} else if strings.HasSuffix(p.Title, ".sh") {
 		p.Buffer.SetSyntax(pythonRules())
 	} else {
-		firstLine := p.Buffer.Get(edit.Index{1, 0}, edit.Index{1, 2 << 30})
+		firstLine := p.Buffer.Get(edit.Index{1, 0}, edit.Index{1, 1 << 30})
 		if strings.HasPrefix(firstLine, "#!") {
 			if strings.Contains(firstLine, "python") {
 				p.Buffer.SetSyntax(pythonRules())
