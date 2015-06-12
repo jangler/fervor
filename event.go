@@ -631,6 +631,9 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 						rc.Focus.Delete(index, rc.Focus.ShiftIndex(index, 1))
 					}
 				}
+				if rc.Focus == rc.Pane.Buffer {
+					rc.Pane.See(insertMark)
+				}
 			case sdl.K_DOWN:
 				if rc.Focus == rc.Pane.Buffer {
 					index := rc.Focus.IndexFromMark(insertMark)
@@ -1000,6 +1003,9 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 		case *sdl.TextInputEvent:
 			if n := bytes.Index(event.Text[:], []byte{0}); n > 0 {
 				textInput(rc.Focus, string(event.Text[:n]))
+				if rc.Focus == rc.Pane.Buffer {
+					rc.Pane.See(insertMark)
+				}
 				render(rc)
 			}
 		case *sdl.UserEvent:
@@ -1010,6 +1016,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 				rc.Pane.Delete(order(sel, insert))
 				insert, _ = order(sel, insert)
 				rc.Pane.Insert(insert, *(*string)(event.Data2))
+				rc.Pane.See(insertMark)
 				render(rc)
 			case statusEvent:
 				if rc.Focus != rc.Input {
