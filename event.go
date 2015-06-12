@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/base32"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"math/rand"
 	"os"
@@ -26,13 +27,20 @@ const (
 	findBackwardPrompt  = "Find backward: "
 	findForwardPrompt   = "Find forward: "
 	goToLinePrompt      = "Go to line: "
-	openPrompt          = "Open: "
 	openNewPrompt       = "Open in new window: "
-	reallyOpenPrompt    = "Really open (y/n)? "
+	openPrompt          = "Open: "
+	pipePrompt          = "Pipe selection through: "
 	reallyOpenNewPrompt = "Really open in new window (y/n)? "
+	reallyOpenPrompt    = "Really open (y/n)? "
 	reallyQuitPrompt    = "Really quit (y/n)? "
 	runPrompt           = "Run: "
 	saveAsPrompt        = "Save as: "
+)
+
+// user event types. these are only vars in order to be addressable.
+var (
+	pipeEvent   = 1
+	statusEvent = 2
 )
 
 var (
@@ -331,6 +339,28 @@ func expandVars(path string) string {
 	return path
 }
 
+// reportExitStatus pushes a status message to the SDL event queue depending
+// on err (which may be nil).
+func reportExitStatus(cmd string, err error) {
+	var event sdl.UserEvent
+	var msg string
+	if err == nil {
+		msg = fmt.Sprintf(`Command "%s" exited successfully.`, cmd)
+	} else {
+		msg = fmt.Sprintf(`Command "%s" exited with error: %v`,
+			cmd, err)
+	}
+	event.Type, event.Data1 = userEventType, unsafe.Pointer(&statusEvent)
+	event.Data2 = unsafe.Pointer(&msg)
+	sdl.PushEvent(&event)
+}
+
+// getSelection returns the selected text in the buffer.
+func getSelection(b *edit.Buffer) string {
+	sel, ins := b.IndexFromMark(selMark), b.IndexFromMark(insertMark)
+	return b.Get(order(sel, ins))
+}
+
 // EnterInput exits prompt mode, taking action based on the prompt string and
 // input text. Returns false if the application should quit.
 func (rc *RenderContext) EnterInput() bool {
@@ -405,6 +435,56 @@ func (rc *RenderContext) EnterInput() bool {
 		} else {
 			rc.Status = err.Error()
 		}
+	case pipePrompt:
+		rc.Status = rc.Pane.Title
+		if input == "" {
+			break
+		}
+
+		// initialize command
+		cmd := exec.Command("/bin/sh", "-c", input)
+		inPipe, err := cmd.StdinPipe()
+		if err != nil {
+			rc.Status = err.Error()
+			break
+		}
+		outPipe, err := cmd.StdoutPipe()
+		if err != nil {
+			rc.Status = err.Error()
+			break
+		}
+		if err := cmd.Start(); err != nil {
+			rc.Status = err.Error()
+			break
+		}
+
+		go func() {
+			// write to stdin and read from stdout
+			go func() {
+				io.WriteString(inPipe, getSelection(rc.Pane.Buffer))
+				inPipe.Close()
+			}()
+			var outBytes []byte
+			go func() {
+				outBytes, _ = ioutil.ReadAll(outPipe)
+			}()
+
+			reportExitStatus(input, cmd.Wait())
+			if outBytes != nil {
+				// strip trailing newline
+				if len(outBytes) > 0 && outBytes[len(outBytes)-1] == '\n' {
+					outBytes = outBytes[:len(outBytes)-1]
+				}
+
+				// push pipe event
+				output := string(outBytes)
+				var event sdl.UserEvent
+				event.Type = userEventType
+				event.Data1 = unsafe.Pointer(&pipeEvent)
+				event.Data2 = unsafe.Pointer(&output)
+				sdl.PushEvent(&event)
+			}
+		}()
 	case reallyOpenPrompt:
 		if input == "y" || input == "yes" {
 			rc.Prompt(openPrompt)
@@ -435,18 +515,7 @@ func (rc *RenderContext) EnterInput() bool {
 
 		go func() {
 			output, err := cmd.CombinedOutput()
-
-			// report exit status
-			var event sdl.UserEvent
-			var msg string
-			if err == nil {
-				msg = fmt.Sprintf(`Command "%s" exited successfully.`, input)
-			} else {
-				msg = fmt.Sprintf(`Command "%s" exited with error: %v`,
-					input, err)
-			}
-			event.Type, event.Data1 = userEventType, unsafe.Pointer(&msg)
-			sdl.PushEvent(&event)
+			reportExitStatus(input, err)
 
 			if output != nil && len(output) > 0 {
 				// generate a random filename
@@ -707,9 +776,8 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 						rc.Status = rc.Pane.Title
 						rc.Focus = rc.Pane.Buffer
 					} else {
-						sel := rc.Focus.IndexFromMark(selMark)
-						insert := rc.Focus.IndexFromMark(insertMark)
-						sdl.SetClipboardText(rc.Focus.Get(order(sel, insert)))
+						sdl.SetClipboardText(getSelection(rc.Pane.Buffer))
+						rc.Status = "Copied text."
 					}
 				}
 			case sdl.K_d:
@@ -772,6 +840,11 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 							rc.Prompt(openPrompt)
 						}
 					}
+				}
+			case sdl.K_p:
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 &&
+					rc.Focus != rc.Input {
+					rc.Prompt(pipePrompt)
 				}
 			case sdl.K_q:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
@@ -912,9 +985,19 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 				render(rc)
 			}
 		case *sdl.UserEvent:
-			if rc.Focus != rc.Input {
-				rc.Status = *(*string)(event.Data1)
+			switch *(*int)(event.Data1) {
+			case pipeEvent:
+				sel := rc.Focus.IndexFromMark(selMark)
+				insert := rc.Focus.IndexFromMark(insertMark)
+				rc.Pane.Delete(order(sel, insert))
+				insert, _ = order(sel, insert)
+				rc.Pane.Insert(insert, *(*string)(event.Data2))
 				render(rc)
+			case statusEvent:
+				if rc.Focus != rc.Input {
+					rc.Status = *(*string)(event.Data2)
+					render(rc)
+				}
 			}
 		case *sdl.WindowEvent:
 			switch event.Event {
