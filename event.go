@@ -31,7 +31,6 @@ const (
 	openNewPrompt       = "Open in new window: "
 	openPrompt          = "Open: "
 	pipePrompt          = "Pipe selection through: "
-	reallyOpenNewPrompt = "Really open in new window (y/n)? "
 	reallyOpenPrompt    = "Really open (y/n)? "
 	reallyQuitPrompt    = "Really quit (y/n)? "
 	runPrompt           = "Run: "
@@ -503,13 +502,6 @@ func (rc *RenderContext) EnterInput() bool {
 		} else {
 			rc.Status = rc.Pane.Title
 		}
-	case reallyOpenNewPrompt:
-		if input == "y" || input == "yes" {
-			rc.Prompt(openNewPrompt)
-			return true // so that main buffer isn't focused
-		} else {
-			rc.Status = rc.Pane.Title
-		}
 	case reallyQuitPrompt:
 		if input == "y" || input == "yes" {
 			return false
@@ -846,11 +838,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 &&
 					rc.Focus != rc.Input {
 					if event.Keysym.Mod&sdl.KMOD_SHIFT != 0 {
-						if rc.Pane.Modified() {
-							rc.Prompt(reallyOpenNewPrompt)
-						} else {
-							rc.Prompt(openNewPrompt)
-						}
+						rc.Prompt(openNewPrompt)
 					} else {
 						if rc.Pane.Modified() {
 							rc.Prompt(reallyOpenPrompt)
