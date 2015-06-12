@@ -1,6 +1,9 @@
 Fervor
 ======
-A graphical cross-platform text editor (alpha status).
+A graphical, modeless, cross-platform text editor influenced by Acme, vi, and
+even Notepad.
+
+This project is in alpha status--use at your own risk!
 
 ![screenshot](http://jangler.info/dl/2015-06-08-195034_fervor.png 'screenshot')
 
@@ -19,7 +22,7 @@ Usage
 Key bindings
 ------------
 	Ctrl+A           Move cursor to beginning of line
-	Ctrl+C           Copy / cancel prompt
+	Ctrl+C           Copy (in buffer), cancel (in prompt)
 	Ctrl+D           Change directory...
 	Ctrl+E           Move cursor to end of line
 	Ctrl+F           Find regexp forward...
@@ -32,7 +35,7 @@ Key bindings
 	Ctrl+Shift+O     Open in new window...
 	Ctrl+P           Pipe selection through command...
 	Ctrl+Q           Quit
-	Ctrl+Shift+Q     Force quit
+	Ctrl+Shift+Q     Quit without confirmation
 	Ctrl+R           Run command...
 	Ctrl+S           Save
 	Ctrl+Shift+S     Save as...
