@@ -599,6 +599,11 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 				rc.Status = rc.Pane.Title
 			}
 			recognized := true
+
+			// get current marks to see if they change based on the event
+			prevSel := rc.Pane.IndexFromMark(selMark)
+			prevIns := rc.Pane.IndexFromMark(insertMark)
+
 			switch event.Keysym.Sym {
 			case sdl.K_BACKSPACE:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
@@ -940,7 +945,10 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 				recognized = false
 			}
 			if recognized {
-				rc.Pane.See(insertMark)
+				if prevSel != rc.Pane.IndexFromMark(selMark) ||
+					prevIns != rc.Pane.IndexFromMark(insertMark) {
+					rc.Pane.See(insertMark)
+				}
 				render(rc)
 			}
 		case *sdl.MouseButtonEvent:
