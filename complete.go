@@ -3,8 +3,19 @@ package main
 import (
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 )
+
+var pathSep string
+
+func init() {
+	if runtime.GOOS == "windows" {
+		pathSep = ";"
+	} else {
+		pathSep = ":"
+	}
+}
 
 // isDir returns true if and only if the given path represents a directory.
 func isDir(path string) bool {
@@ -59,14 +70,14 @@ func completePath(path string, dirsOnly bool) string {
 // completeCmd completes the typed command name if there is exactly one match
 // in $PATH.
 func completeCmd(exe string) string {
-	paths := strings.Split(os.Getenv("PATH"), ":")
+	paths := strings.Split(os.Getenv("PATH"), pathSep)
 	var match string
 	for _, path := range paths {
 		if f, err := os.Open(path); err == nil {
 			if names, err := f.Readdirnames(0); err == nil {
 				for _, name := range names {
 					if strings.HasPrefix(name, exe) {
-						if match == "" {
+						if match == "" || match == name { // links are OK
 							match = name
 						} else {
 							return exe

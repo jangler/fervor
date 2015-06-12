@@ -12,6 +12,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"regexp"
+	"runtime"
 	"strconv"
 	"strings"
 	"time"
@@ -49,6 +50,16 @@ var (
 )
 
 var userEventType uint32 // set at beginning of event loop
+
+var shellName, shellOpt string
+
+func init() {
+	if runtime.GOOS == "windows" {
+		shellName, shellOpt = "cmd", "/c"
+	} else {
+		shellName, shellOpt = "/bin/sh", "-c"
+	}
+}
 
 // minPath returns the shortest valid representation of the given file path.
 func minPath(path string) string {
@@ -442,7 +453,7 @@ func (rc *RenderContext) EnterInput() bool {
 		}
 
 		// initialize command
-		cmd := exec.Command("/bin/sh", "-c", input)
+		cmd := exec.Command(shellName, shellOpt, input)
 		inPipe, err := cmd.StdinPipe()
 		if err != nil {
 			rc.Status = err.Error()
@@ -510,8 +521,7 @@ func (rc *RenderContext) EnterInput() bool {
 		if input == "" {
 			break
 		}
-		// TODO: what command interpreter to use on windows?
-		cmd := exec.Command("/bin/sh", "-c", input)
+		cmd := exec.Command(shellName, shellOpt, input)
 
 		go func() {
 			output, err := cmd.CombinedOutput()
