@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"regexp"
+	"unicode/utf8"
 
 	"github.com/jangler/edit"
 	"github.com/veandco/go-sdl2/sdl"
@@ -91,26 +92,28 @@ func drawBuffer(pane *Pane, font *ttf.Font, dst *sdl.Surface, focused bool) {
 				fg = literalColor
 			}
 			if i >= startRow && i <= endRow {
-				var pre, mid, post string
+				pre, mid, post := []rune(""), []rune(""), []rune("")
+				runes := []rune(text)
 				if i == startRow && c < startCol {
-					if startCol-c < len(text) {
-						pre = text[:startCol-c]
+					if startCol-c < len(runes) {
+						pre = runes[:startCol-c]
 					} else {
-						pre = text
+						pre = runes
 					}
 				}
-				if i == endRow && c+len(text) > endCol {
+				if i == endRow && c+len(runes) > endCol {
 					if c < endCol {
-						post = text[endCol-c:]
+						post = runes[endCol-c:]
 					} else {
-						post = text
+						post = runes
 					}
 				}
-				mid = text[len(pre) : len(text)-len(post)]
-				x = drawString(font, pre, fg, bgColorSDL, dst, x, y)
-				x = drawString(font, mid, fg, statusBgColorSDL, dst, x, y)
-				x = drawString(font, post, fg, bgColorSDL, dst, x, y)
-				c += len(text)
+				mid = runes[len(pre) : len(runes)-len(post)]
+				x = drawString(font, string(pre), fg, bgColorSDL, dst, x, y)
+				x = drawString(font, string(mid), fg, statusBgColorSDL, dst,
+					x, y)
+				x = drawString(font, string(post), fg, bgColorSDL, dst, x, y)
+				c += len(runes)
 			} else {
 				x = drawString(font, text, fg, bgColorSDL, dst, x, y)
 			}
@@ -139,6 +142,14 @@ func drawString(font *ttf.Font, s string, fg, bg sdl.Color, dst *sdl.Surface,
 		if err != nil {
 			log.Fatal(err)
 		}
+
+		// check surface size to make sure we're not missing glyphs
+		delta := fontWidth*utf8.RuneCountInString(s) - int(surf.W)
+		if delta > fontWidth/2 {
+			log.Println(delta, s)
+			panic(fmt.Errorf("Rendered surface has incorrect size"))
+		}
+
 		x += int(surf.W)
 	}
 	return x

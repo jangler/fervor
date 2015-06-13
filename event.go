@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode/utf8"
 	"unsafe"
 
 	"github.com/jangler/edit"
@@ -24,17 +25,17 @@ import (
 )
 
 const (
-	cdPrompt            = "Change directory to: "
-	findBackwardPrompt  = "Find backward: "
-	findForwardPrompt   = "Find forward: "
-	goToLinePrompt      = "Go to line: "
-	openNewPrompt       = "Open in new window: "
-	openPrompt          = "Open: "
-	pipePrompt          = "Pipe selection through: "
-	reallyOpenPrompt    = "Really open (y/n)? "
-	reallyQuitPrompt    = "Really quit (y/n)? "
-	runPrompt           = "Run: "
-	saveAsPrompt        = "Save as: "
+	cdPrompt           = "Change directory to: "
+	findBackwardPrompt = "Find backward: "
+	findForwardPrompt  = "Find forward: "
+	goToLinePrompt     = "Go to line: "
+	openNewPrompt      = "Open in new window: "
+	openPrompt         = "Open: "
+	pipePrompt         = "Pipe selection through: "
+	reallyOpenPrompt   = "Really open (y/n)? "
+	reallyQuitPrompt   = "Really quit (y/n)? "
+	runPrompt          = "Run: "
+	saveAsPrompt       = "Save as: "
 )
 
 // user event types. these are only vars in order to be addressable.
@@ -164,9 +165,10 @@ func clickFind(rc *RenderContext, shift bool, x, y int) {
 		index := selIndex
 		text := pane.Get(edit.Index{1, 0}, index)
 		if pos := strings.LastIndex(text, selection); pos >= 0 {
-			pane.Mark(pane.ShiftIndex(index, pos-len(text)), selMark)
+			pane.Mark(pane.ShiftIndex(index, pos-utf8.RuneCountInString(text)),
+				selMark)
 			pane.Mark(pane.ShiftIndex(pane.IndexFromMark(selMark),
-				len(selection)), insertMark)
+				utf8.RuneCountInString(selection)), insertMark)
 		} else {
 			rc.Status = "No backward match."
 		}
@@ -176,7 +178,7 @@ func clickFind(rc *RenderContext, shift bool, x, y int) {
 		if pos := strings.Index(text, selection); pos >= 0 {
 			pane.Mark(pane.ShiftIndex(index, pos), selMark)
 			pane.Mark(pane.ShiftIndex(pane.IndexFromMark(selMark),
-				len(selection)), insertMark)
+				utf8.RuneCountInString(selection)), insertMark)
 		} else {
 			rc.Status = "No forward match."
 		}
