@@ -124,8 +124,7 @@ func main() {
 	}
 	pane.SetTabWidth(4)
 	pane.SetSyntax()
-	pane.Mark(edit.Index{1, 0}, insMark)
-	pane.Mark(edit.Index{1, 0}, selMark)
+	pane.Mark(edit.Index{1, 0}, selMark, insMark)
 
 	win := createWindow(minPath(arg), font)
 	defer win.Destroy()

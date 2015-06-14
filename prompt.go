@@ -84,8 +84,7 @@ func (rc *RenderContext) EnterInput() bool {
 		} else {
 			rc.Status = fmt.Sprintf(`New file: "%s".`, minPath(input))
 		}
-		rc.Pane.Mark(edit.Index{1, 0}, insMark)
-		rc.Pane.Mark(edit.Index{1, 0}, selMark)
+		rc.Pane.Mark(edit.Index{1, 0}, selMark, insMark)
 		rc.Pane.Title = minPath(input)
 		rc.Window.SetTitle(rc.Pane.Title)
 		rc.Pane.SetSyntax()

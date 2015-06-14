@@ -67,8 +67,7 @@ func clickFind(rc *RenderContext, shift bool, x, y int) {
 	// reposition cursor if click is outside selection
 	clickIndex := pane.IndexFromCoords(x, y)
 	if clickIndex.Less(selIndex) || insertIndex.Less(clickIndex) {
-		pane.Mark(clickIndex, selMark)
-		pane.Mark(clickIndex, insMark)
+		pane.Mark(clickIndex, selMark, insMark)
 		selIndex = pane.IndexFromMark(selMark)
 		insertIndex = pane.IndexFromMark(insMark)
 	}
@@ -171,8 +170,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 	userEventType = sdl.RegisterEvents(1)
 	rc := &RenderContext{pane, edit.NewBuffer(), pane.Buffer, status, font,
 		win, nil}
-	rc.Input.Mark(edit.Index{1, 0}, insMark)
-	rc.Input.Mark(edit.Index{1, 0}, selMark)
+	rc.Input.Mark(edit.Index{1, 0}, selMark, insMark)
 	render(rc)
 	w, h := win.GetSize()
 	win.SetSize(w, h)
