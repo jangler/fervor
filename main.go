@@ -15,6 +15,8 @@ import (
 	"github.com/veandco/go-sdl2/sdl_ttf"
 )
 
+const version = "0.0.0"
+
 const (
 	insertMark = iota // ID of the cursor/insertion mark
 	selMark           // ID of the selection anchor mark
@@ -38,10 +40,22 @@ func getFont() *ttf.Font {
 // initFlag processes command-line flags and arguments.
 func initFlag() {
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [<file>]\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "Usage: %s [<option> ...] [<file>]\n",
+			os.Args[0])
+		fmt.Fprintln(os.Stderr, "\nOptions:")
 		flag.PrintDefaults()
 	}
+	versionFlag := flag.Bool("version", false, "print version information "+
+		"and exit")
+
 	flag.Parse()
+
+	if *versionFlag {
+		fmt.Printf("%s version %s %s/%s\n", os.Args[0], version, runtime.GOOS,
+			runtime.GOARCH)
+		os.Exit(0)
+	}
+
 	if flag.NArg() > 1 {
 		flag.Usage()
 		os.Exit(1)
