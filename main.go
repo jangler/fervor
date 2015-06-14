@@ -8,7 +8,6 @@ import (
 	"os"
 	"runtime"
 	"strings"
-	"unsafe"
 
 	"github.com/jangler/edit"
 	"github.com/veandco/go-sdl2/sdl"
@@ -18,23 +17,9 @@ import (
 const version = "0.0.0"
 
 const (
-	insertMark = iota // ID of the cursor/insertion mark
-	selMark           // ID of the selection anchor mark
+	insMark = iota // ID of the cursor/insertion mark
+	selMark        // ID of the selection anchor mark
 )
-
-// getFont loads the default TTF from memory and returns it.
-func getFont() *ttf.Font {
-	data, err := Asset("data/DejaVuSansMono.ttf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	rw := sdl.RWFromMem(unsafe.Pointer(&data[0]), len(data))
-	font, err := ttf.OpenFontRW(rw, 1, 12)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return font
-}
 
 // initFlag processes command-line flags and arguments.
 func initFlag() {
@@ -122,11 +107,6 @@ func main() {
 	defer ttf.Quit()
 
 	font := getFont()
-	var err error
-	fontWidth, _, err = font.SizeUTF8("0")
-	if err != nil {
-		log.Fatal(err)
-	}
 
 	var pane *Pane
 	var arg, status string
@@ -144,13 +124,13 @@ func main() {
 	}
 	pane.SetTabWidth(4)
 	pane.SetSyntax()
-	pane.Mark(edit.Index{1, 0}, insertMark)
+	pane.Mark(edit.Index{1, 0}, insMark)
 	pane.Mark(edit.Index{1, 0}, selMark)
 
 	win := createWindow(minPath(arg), font)
 	defer win.Destroy()
 
 	w, h := win.GetSize()
-	resize(pane, font, w, h)
+	resize(pane, w, h)
 	eventLoop(pane, status, font, win)
 }

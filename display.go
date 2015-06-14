@@ -29,7 +29,7 @@ var (
 	literalColor     = sdl.Color{0x8e, 0x4a, 0x43, 0xff}
 )
 
-var fontWidth int
+var fontHeight, fontWidth int
 
 // Pane is a buffer with associated metadata.
 type Pane struct {
@@ -54,6 +54,29 @@ func (p Pane) See(id int) {
 	}
 }
 
+// getFont loads the default TTF from memory and returns it.
+func getFont() *ttf.Font {
+	// load font
+	data, err := Asset("data/DejaVuSansMono.ttf")
+	if err != nil {
+		log.Fatal(err)
+	}
+	rw := sdl.RWFromMem(unsafe.Pointer(&data[0]), len(data))
+	font, err := ttf.OpenFontRW(rw, 1, 12)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	// set global font dimensions
+	fontWidth, _, err = font.SizeUTF8("0")
+	if err != nil {
+		log.Fatal(err)
+	}
+	fontHeight = font.Height()
+
+	return font
+}
+
 // getIcon loads the window icon from memory and returns it as a surface.
 func getIcon() *sdl.Surface {
 	data, err := Asset("data/icon.bmp")
@@ -72,7 +95,7 @@ func getIcon() *sdl.Surface {
 // titled title.
 func createWindow(title string, font *ttf.Font) *sdl.Window {
 	width := fontWidth*80 + padPx*2
-	height := font.Height()*27 + padPx*6
+	height := fontHeight*27 + padPx*6
 	win, err := sdl.CreateWindow(title, sdl.WINDOWPOS_UNDEFINED,
 		sdl.WINDOWPOS_UNDEFINED, width, height, sdl.WINDOW_RESIZABLE)
 	win.SetIcon(getIcon())
@@ -85,7 +108,7 @@ func createWindow(title string, font *ttf.Font) *sdl.Window {
 // drawBuffer draws the displayed contents of pane to dst using font.
 func drawBuffer(pane *Pane, font *ttf.Font, dst *sdl.Surface, focused bool) {
 	x, y := padPx, padPx
-	mark := pane.IndexFromMark(insertMark)
+	mark := pane.IndexFromMark(insMark)
 	col, row := pane.CoordsFromIndex(mark)
 	sel := pane.IndexFromMark(selMark)
 	selStart, selEnd := sel, mark
@@ -136,9 +159,9 @@ func drawBuffer(pane *Pane, font *ttf.Font, dst *sdl.Surface, focused bool) {
 		}
 		if focused && i == row {
 			dst.FillRect(&sdl.Rect{int32(padPx + fontWidth*col), int32(y),
-				1, int32(font.Height())}, fgColor)
+				1, int32(fontHeight)}, fgColor)
 		}
-		y += font.Height()
+		y += fontHeight
 		x = padPx
 	}
 }
@@ -178,26 +201,26 @@ func drawStatusLine(dst *sdl.Surface, font *ttf.Font, s string,
 	// draw background
 	bgRect := sdl.Rect{
 		0,
-		dst.H - int32(font.Height()) - padPx*2,
+		dst.H - int32(fontHeight) - padPx*2,
 		dst.W,
-		int32(font.Height()) + padPx*2,
+		int32(fontHeight) + padPx*2,
 	}
 	dst.FillRect(&bgRect, statusBgColor)
 
 	// draw status text
-	x, y := padPx, int(dst.H)-font.Height()-padPx
+	x, y := padPx, int(dst.H)-fontHeight-padPx
 	x = drawString(font, s, fgColorSDL, statusBgColorSDL, dst, x, y)
 
 	if focused {
 		// draw input text and cursor
 		drawString(font, input.Get(edit.Index{1, 0}, input.End()), fgColorSDL,
 			statusBgColorSDL, dst, x, y)
-		index := input.IndexFromMark(insertMark)
+		index := input.IndexFromMark(insMark)
 		dst.FillRect(&sdl.Rect{int32(x + fontWidth*index.Char), int32(y),
-			1, int32(font.Height())}, fgColor)
+			1, int32(fontHeight)}, fgColor)
 	} else if s == pane.Title {
 		// draw cursor pos
-		index := pane.IndexFromMark(insertMark)
+		index := pane.IndexFromMark(insMark)
 		line := pane.Get(edit.Index{index.Line, 0}, index)
 		col := 0
 		for _, ch := range line {
@@ -212,7 +235,7 @@ func drawStatusLine(dst *sdl.Surface, font *ttf.Font, s string,
 			cursorPos += fmt.Sprintf("-%d", col)
 		}
 		drawString(font, cursorPos, fgColorSDL, statusBgColorSDL, dst,
-			int(dst.W)-padPx-fontWidth*17, int(dst.H)-font.Height()-padPx)
+			int(dst.W)-padPx-fontWidth*17, int(dst.H)-fontHeight-padPx)
 
 		// draw scroll percent
 		f := pane.ScrollFraction()
@@ -221,21 +244,19 @@ func drawStatusLine(dst *sdl.Surface, font *ttf.Font, s string,
 			scrollStr = "All"
 		}
 		drawString(font, scrollStr, fgColorSDL, statusBgColorSDL, dst,
-			int(dst.W)-padPx-fontWidth*4, int(dst.H)-font.Height()-padPx)
+			int(dst.W)-padPx-fontWidth*4, int(dst.H)-fontHeight-padPx)
 	}
 }
 
-// paneSpace returns the number of vertical pixels available to each pane,
-// sized equally out of n panes.
-func paneSpace(height, n int, font *ttf.Font) int {
-	return (height - font.Height() - padPx*2) / n
+// paneSpace returns the number of vertical pixels available to a pane.
+func paneSpace(height int) int {
+	return height - fontHeight - padPx*2
 }
 
-// bufSize returns the number of rows and columns available to each pane,
-// sized equally out of n panes.
-func bufSize(width, height, n int, font *ttf.Font) (cols, rows int) {
+// bufSize returns the number of rows and columns available to a pane.
+func bufSize(width, height int) (cols, rows int) {
 	cols = (width - padPx*2) / fontWidth
-	rows = paneSpace(height, n, font) / font.Height()
+	rows = paneSpace(height) / fontHeight
 	return
 }
 
