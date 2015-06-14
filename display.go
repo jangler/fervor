@@ -143,10 +143,11 @@ func drawString(font *ttf.Font, s string, fg, bg sdl.Color, dst *sdl.Surface,
 			log.Fatal(err)
 		}
 
-		// check surface size to make sure we're not missing glyphs
+		// check surface size to make sure we're not missing glyphs.
+		// this will probably be an issue with zero-width runes--let's hope we
+		// don't encounter any of those.
 		delta := fontWidth*utf8.RuneCountInString(s) - int(surf.W)
 		if delta > fontWidth/2 {
-			log.Println(delta, s)
 			panic(fmt.Errorf("Rendered surface has incorrect size"))
 		}
 

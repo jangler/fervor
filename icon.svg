@@ -1,0 +1,10 @@
+<svg width="64" height="64">
+  <rect x="0" y="0" width="64" height="64" fill="#ffffff"/>
+  <rect x="0" y="56" width="64" height="8" fill="#c5c5c5"/>
+  <path fill="none" stroke="#4481f5" stroke-width="4"
+   d="M 33 43.5 A 20.8 20.8 0 0 1 32 8 A 20.8 20.8 0 0 1 41.6 28"/>
+  <path fill="none" stroke="#40934f" stroke-width="4"
+   d="M 41.6 28 A 20.8 20.8 0 0 1 11.2 44 A 20.8 20.8 0 0 1 21.5 26.5"/>
+  <path fill="none" stroke="#f05e52" stroke-width="4"
+   d="M 24 26.3 A 20.8 20.8 0 0 1 52.7 44 A 20.8 20.8 0 0 1 33.5 43.6"/>
+</svg>
