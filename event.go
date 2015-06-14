@@ -756,7 +756,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 						input = completePath(input, true)
 					case openPrompt, openNewPrompt, saveAsPrompt:
 						input = completePath(input, false)
-					case runPrompt:
+					case pipePrompt, runPrompt:
 						tokens := strings.Split(input, " ")
 						for i, token := range tokens {
 							if i == 0 {
