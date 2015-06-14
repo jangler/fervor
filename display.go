@@ -5,6 +5,7 @@ import (
 	"log"
 	"regexp"
 	"unicode/utf8"
+	"unsafe"
 
 	"github.com/jangler/edit"
 	"github.com/veandco/go-sdl2/sdl"
@@ -53,6 +54,20 @@ func (p Pane) See(id int) {
 	}
 }
 
+// getIcon loads the window icon from memory and returns it as a surface.
+func getIcon() *sdl.Surface {
+	data, err := Asset("data/icon.bmp")
+	if err != nil {
+		log.Fatal(err)
+	}
+	rw := sdl.RWFromMem(unsafe.Pointer(&data[0]), len(data))
+	surf, err := sdl.LoadBMP_RW(rw, 1)
+	if err != nil {
+		log.Fatal(err)
+	}
+	return surf
+}
+
 // createWindow returns a new SDL window of appropriate size given font, and
 // titled title.
 func createWindow(title string, font *ttf.Font) *sdl.Window {
@@ -60,6 +75,7 @@ func createWindow(title string, font *ttf.Font) *sdl.Window {
 	height := font.Height()*27 + padPx*6
 	win, err := sdl.CreateWindow(title, sdl.WINDOWPOS_UNDEFINED,
 		sdl.WINDOWPOS_UNDEFINED, width, height, sdl.WINDOW_RESIZABLE)
+	win.SetIcon(getIcon())
 	if err != nil {
 		log.Fatal(err)
 	}
