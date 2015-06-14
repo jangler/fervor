@@ -33,7 +33,6 @@ func getFont() *ttf.Font {
 	if err != nil {
 		log.Fatal(err)
 	}
-	font.SetHinting(ttf.HINTING_MONO)
 	return font
 }
 
