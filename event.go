@@ -1032,7 +1032,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 			}
 		case *sdl.WindowEvent:
 			switch event.Event {
-			case sdl.WINDOWEVENT_EXPOSED:
+			case sdl.WINDOWEVENT_EXPOSED, sdl.WINDOWEVENT_SHOWN:
 				win.UpdateSurface()
 			case sdl.WINDOWEVENT_RESIZED:
 				resize(rc.Pane, font, int(event.Data1), int(event.Data2))
