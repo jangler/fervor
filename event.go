@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"log"
 	"math/rand"
 	"os"
 	"os/exec"
@@ -23,6 +24,9 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 	"github.com/veandco/go-sdl2/sdl_ttf"
 )
+
+// TODO: Break up this monster file into smaller components. Reduce coupling
+//       if possible.
 
 const (
 	cdPrompt           = "Change directory to: "
@@ -376,6 +380,7 @@ func reportExitStatus(cmd string, err error) {
 			cmd, err)
 	}
 	event.Type, event.Data1 = userEventType, unsafe.Pointer(&statusEvent)
+	disableGC()
 	event.Data2 = unsafe.Pointer(&msg)
 	sdl.PushEvent(&event)
 }
@@ -485,12 +490,18 @@ func (rc *RenderContext) EnterInput() bool {
 		go func() {
 			// write to stdin and read from stdout
 			go func() {
-				io.WriteString(inPipe, getSelection(rc.Pane.Buffer))
+				_, err := io.WriteString(inPipe, getSelection(rc.Pane.Buffer))
+				if err != nil {
+					log.Print(err)
+				}
 				inPipe.Close()
 			}()
 			var outBytes []byte
 			go func() {
-				outBytes, _ = ioutil.ReadAll(outPipe)
+				outBytes, err = ioutil.ReadAll(outPipe)
+				if err != nil {
+					log.Print(err)
+				}
 			}()
 
 			reportExitStatus(input, cmd.Wait())
@@ -505,6 +516,7 @@ func (rc *RenderContext) EnterInput() bool {
 				var event sdl.UserEvent
 				event.Type = userEventType
 				event.Data1 = unsafe.Pointer(&pipeEvent)
+				disableGC()
 				event.Data2 = unsafe.Pointer(&output)
 				sdl.PushEvent(&event)
 			}
@@ -1030,6 +1042,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					render(rc)
 				}
 			}
+			enableGC()
 		case *sdl.WindowEvent:
 			switch event.Event {
 			case sdl.WINDOWEVENT_EXPOSED, sdl.WINDOWEVENT_SHOWN:
