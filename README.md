@@ -1,11 +1,31 @@
 Fervor
 ======
-A graphical, modeless, cross-platform text editor influenced by Acme, vi, and
-even Notepad.
-
-This project is in alpha status--use at your own risk!
 
 ![screenshot](http://jangler.info/dl/fervor-screenshot.png 'screenshot')
+
+A graphical, modeless, cross-platform text editor influenced by Acme, vi, and
+even Notepad. Features include:
+
+- Infinite undo
+- Unicode (UTF-8) support
+- Regular expression search
+- Acme-like right-click find
+- No GUI toolkit dependencies
+- Quick startup and low memory footprint
+- Asynchronous shell command execution and selection filtering
+- Syntax highlighting (currently for: C, Go, JSON, Make, Python, and Bash)
+
+Not included (yet):
+
+- Support for Windows-style (CRLF) line endings
+- Any form of configuration
+- A scrollbar
+
+Not included (ever):
+
+- Tabs or panes. Use a good window manager instead!
+
+This project is in alpha status--use at your own risk!
 
 Installation
 ------------
@@ -49,8 +69,6 @@ Key bindings
 	Ctrl+X           Cut
 	Ctrl+Y           Redo
 	Ctrl+Z           Undo
-	Ctrl+End         Move cursor to end of buffer
-	Ctrl+Home        Move cursor to beginning of buffer
 	Tab (in prompt)  Complete command name or file path
 
 Holding Shift makes a cursor motion select text from the previous cursor
