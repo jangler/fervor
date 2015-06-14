@@ -5,7 +5,7 @@ even Notepad.
 
 This project is in alpha status--use at your own risk!
 
-![screenshot](http://jangler.info/dl/2015-06-08-195034_fervor.png 'screenshot')
+![screenshot](http://jangler.info/dl/fervor-screenshot.png 'screenshot')
 
 Installation
 ------------
