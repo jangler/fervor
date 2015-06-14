@@ -89,6 +89,8 @@ func minPath(path string) string {
 
 // selectWord selects the word at the given index in the pane.
 func selectWord(pane *Pane, index edit.Index) {
+	// TODO: Instead of using ShiftIndex, just use a new buffer literal, since
+	//       by definition a word can't span multiple lines.
 	selIndex, insertIndex := index, index
 	for wordRegexp.MatchString(pane.Get(pane.ShiftIndex(selIndex, -1),
 		selIndex)) {
@@ -113,6 +115,18 @@ func colRowFromXY(rc *RenderContext, x, y int) (col, row int) {
 	return x, y
 }
 
+// select line changes the selection to the entirety of a line, skipping
+// leading whitespace.
+func selectLine(b *edit.Buffer, line int) {
+	selIndex := edit.Index{line, 0}
+	for spaceRegexp.MatchString(b.Get(selIndex,
+		edit.Index{line, selIndex.Char + 1})) {
+		selIndex = edit.Index{line, selIndex.Char + 1}
+	}
+	b.Mark(selIndex, selMark)
+	b.Mark(edit.Index{line, 1 << 30}, insertMark)
+}
+
 // click processes a left mouse click at the given coordinates.
 func click(rc *RenderContext, x, y, times int, shift bool) {
 	pane := rc.Pane
@@ -128,8 +142,7 @@ func click(rc *RenderContext, x, y, times int, shift bool) {
 		selectWord(pane, pane.IndexFromCoords(x, y))
 	case 3: // select line
 		index := pane.IndexFromCoords(x, y)
-		pane.Mark(edit.Index{index.Line, 0}, selMark)
-		pane.Mark(edit.Index{index.Line, 1 << 30}, insertMark)
+		selectLine(rc.Pane.Buffer, index.Line)
 	}
 }
 
@@ -411,8 +424,7 @@ func (rc *RenderContext) EnterInput() bool {
 	case goToLinePrompt:
 		if n, err := strconv.ParseInt(input, 0, 0); err == nil {
 			rc.Status = rc.Pane.Title
-			rc.Pane.Mark(edit.Index{int(n), 0}, selMark)
-			rc.Pane.Mark(edit.Index{int(n), 1 << 30}, insertMark)
+			selectLine(rc.Pane.Buffer, int(n))
 		} else {
 			rc.Status = err.Error()
 		}
