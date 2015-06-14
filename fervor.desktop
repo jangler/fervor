@@ -1,0 +1,12 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Fervor
+GenericName=Text editor
+Icon=fervor
+TryExec=fervor
+Exec=fervor %f
+Terminal=false
+MimeType=text/plain
+Categories=Development;Utility;TextEditor
+Keywords=text;editor
