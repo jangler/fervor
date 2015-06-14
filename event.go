@@ -881,9 +881,13 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					}
 				}
 			case sdl.K_r:
-				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 &&
-					rc.Focus != rc.Input {
-					rc.Prompt(runPrompt)
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+					if event.Keysym.Mod&sdl.KMOD_SHIFT != 0 {
+						rc.Font = getFont()
+						rc.Status = "Reloaded font."
+					} else if rc.Focus != rc.Input {
+						rc.Prompt(runPrompt)
+					}
 				}
 			case sdl.K_s:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 &&

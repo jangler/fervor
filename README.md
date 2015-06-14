@@ -17,7 +17,10 @@ The SDL2 and SDL2\_ttf libraries are required.
 
 Usage
 -----
-	Usage: fervor [<file>]
+	Usage: fervor [<option> ...] [<file>]
+
+	Options:
+	  -version=false: print version information and exit
 
 Key bindings
 ------------
@@ -37,6 +40,7 @@ Key bindings
 	Ctrl+Q           Quit
 	Ctrl+Shift+Q     Quit without confirmation
 	Ctrl+R           Run command...
+	Ctrl+Shift+R     Reload font (fixes missing glyphs)
 	Ctrl+S           Save
 	Ctrl+Shift+S     Save as...
 	Ctrl+U           Delete line backward
