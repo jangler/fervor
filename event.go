@@ -217,7 +217,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					}
 				}
 				if rc.Focus == rc.Pane.Buffer {
-					rc.Pane.See(insMark)
+					seeMark(rc.Pane.Buffer, insMark, rc.Pane.Rows)
 				}
 			case sdl.K_DOWN:
 				if rc.Focus == rc.Pane.Buffer {
@@ -537,7 +537,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 			if recognized {
 				if prevSel != rc.Pane.IndexFromMark(selMark) ||
 					prevIns != rc.Pane.IndexFromMark(insMark) {
-					rc.Pane.See(insMark)
+					seeMark(rc.Pane.Buffer, insMark, rc.Pane.Rows)
 				}
 				render(rc)
 			}
@@ -565,7 +565,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 			} else if event.Type == sdl.MOUSEBUTTONUP &&
 				event.Button == sdl.BUTTON_RIGHT {
 				clickFind(rc, shift, int(event.X), int(event.Y))
-				rc.Pane.See(insMark)
+				seeMark(rc.Pane.Buffer, insMark, rc.Pane.Rows)
 				warpMouseToSel(rc.Window, rc.Pane.Buffer)
 				render(rc)
 			}
@@ -593,7 +593,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 			if n := bytes.Index(event.Text[:], []byte{0}); n > 0 {
 				textInput(rc.Focus, string(event.Text[:n]))
 				if rc.Focus == rc.Pane.Buffer {
-					rc.Pane.See(insMark)
+					seeMark(rc.Pane.Buffer, insMark, rc.Pane.Rows)
 				}
 				render(rc)
 			}
@@ -601,11 +601,11 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 			switch *(*int)(event.Data1) {
 			case pipeEvent:
 				sel := rc.Focus.IndexFromMark(selMark)
-				insert := rc.Focus.IndexFromMark(insMark)
-				rc.Pane.Delete(order(sel, insert))
-				insert, _ = order(sel, insert)
-				rc.Pane.Insert(insert, *(*string)(event.Data2))
-				rc.Pane.See(insMark)
+				ins := rc.Focus.IndexFromMark(insMark)
+				rc.Pane.Delete(order(sel, ins))
+				ins, _ = order(sel, ins)
+				rc.Pane.Insert(ins, *(*string)(event.Data2))
+				seeMark(rc.Pane.Buffer, insMark, rc.Pane.Rows)
 				render(rc)
 			case statusEvent:
 				if rc.Focus != rc.Input {

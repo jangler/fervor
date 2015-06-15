@@ -60,6 +60,25 @@ func order(index1, index2 edit.Index) (first, second edit.Index) {
 	return index2, index1
 }
 
+// seeMark ensurees that the mark with ID id is visible on the buffer's screen,
+// which displays numRows rows.
+func seeMark(b *edit.Buffer, id, numRows int) {
+	_, row := b.CoordsFromIndex(b.IndexFromMark(id))
+
+	// If the mark is off-screen by less than a page, scroll so that the mark
+	// is at the top or bottom edge of the display. Otherwise, scroll so that
+	// the mark is centered in the display.
+	if row < -numRows {
+		b.Scroll(row - numRows/2)
+	} else if row < 0 {
+		b.Scroll(row)
+	} else if row >= numRows*2 {
+		b.Scroll(row + 1 - numRows/2)
+	} else if row >= numRows {
+		b.Scroll(row + 1 - numRows)
+	}
+}
+
 // select line changes the selection to the entirety of a line, sans leading
 // whitespace.
 func selectLine(b *edit.Buffer, line int) {
