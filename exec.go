@@ -17,7 +17,7 @@ import (
 	"github.com/veandco/go-sdl2/sdl"
 )
 
-var shellName, shellOpt string
+var shellName, shellOpt string // command interpreter invocation
 
 func init() {
 	rand.Seed(time.Now().UnixNano())

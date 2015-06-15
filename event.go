@@ -33,75 +33,70 @@ func colRowFromXY(winHeight, x, y int) (col, row int) {
 }
 
 // click processes a left mouse click at the given coordinates.
-func click(rc *RenderContext, x, y, times int, shift bool) {
-	pane := rc.Pane
-	_, winHeight := rc.Window.GetSize()
+func click(b *edit.Buffer, winHeight, x, y, times int, shift bool) {
 	x, y = colRowFromXY(winHeight, x, y)
 
 	switch times {
 	case 1: // place cursor
-		pane.Mark(pane.IndexFromCoords(x, y), insMark)
+		b.Mark(b.IndexFromCoords(x, y), insMark)
 		if !shift {
-			pane.Mark(pane.IndexFromMark(insMark), selMark)
+			b.Mark(b.IndexFromMark(insMark), selMark)
 		}
 	case 2: // select word
-		selectWord(pane.Buffer, pane.IndexFromCoords(x, y))
+		selectWord(b, b.IndexFromCoords(x, y))
 	case 3: // select line
-		index := pane.IndexFromCoords(x, y)
-		selectLine(rc.Pane.Buffer, index.Line)
+		index := b.IndexFromCoords(x, y)
+		selectLine(b, index.Line)
 	}
 }
 
 // clickFind moves the cursor and selection to the next or previous instance of
-// the selected text.
-func clickFind(rc *RenderContext, shift bool, x, y int) {
-	pane := rc.Pane
-	_, winHeight := rc.Window.GetSize()
+// the selected text, and returns a status message,
+func clickFind(b *edit.Buffer, shift bool, winHeight, x, y int,
+	defaultStatus string) string {
 	x, y = colRowFromXY(winHeight, x, y)
 
 	// get selection
-	selIndex := pane.IndexFromMark(selMark)
-	insertIndex := pane.IndexFromMark(insMark)
-	selIndex, insertIndex = order(selIndex, insertIndex)
+	sel, ins := order(b.IndexFromMark(selMark), b.IndexFromMark(insMark))
 
 	// reposition cursor if click is outside selection
-	clickIndex := pane.IndexFromCoords(x, y)
-	if clickIndex.Less(selIndex) || insertIndex.Less(clickIndex) {
-		pane.Mark(clickIndex, selMark, insMark)
-		selIndex = pane.IndexFromMark(selMark)
-		insertIndex = pane.IndexFromMark(insMark)
+	clickIndex := b.IndexFromCoords(x, y)
+	if clickIndex.Less(sel) || ins.Less(clickIndex) {
+		b.Mark(clickIndex, selMark, insMark)
+		sel, ins = b.IndexFromMark(selMark), b.IndexFromMark(insMark)
 	}
 
 	// select word if selection is nil
-	if selIndex == insertIndex {
-		selectWord(pane.Buffer, selIndex)
-		selIndex = pane.IndexFromMark(selMark)
-		insertIndex = pane.IndexFromMark(insMark)
+	if sel == ins {
+		selectWord(b, sel)
+		sel, ins = b.IndexFromMark(selMark), b.IndexFromMark(insMark)
 	}
-	selection := pane.Get(selIndex, insertIndex)
+	selection := b.Get(sel, ins)
 
 	if shift { // search backwards
-		index := selIndex
-		text := pane.Get(edit.Index{1, 0}, index)
+		index := sel
+		text := b.Get(edit.Index{1, 0}, index)
 		if pos := strings.LastIndex(text, selection); pos >= 0 {
-			pane.Mark(pane.ShiftIndex(index, pos-utf8.RuneCountInString(text)),
+			b.Mark(b.ShiftIndex(index, pos-utf8.RuneCountInString(text)),
 				selMark)
-			pane.Mark(pane.ShiftIndex(pane.IndexFromMark(selMark),
+			b.Mark(b.ShiftIndex(b.IndexFromMark(selMark),
 				utf8.RuneCountInString(selection)), insMark)
 		} else {
-			rc.Status = "No backward match."
+			return "No backward match."
 		}
 	} else { // search forwards
-		index := insertIndex
-		text := pane.Get(index, pane.End())
+		index := ins
+		text := b.Get(index, b.End())
 		if pos := strings.Index(text, selection); pos >= 0 {
-			pane.Mark(pane.ShiftIndex(index, pos), selMark)
-			pane.Mark(pane.ShiftIndex(pane.IndexFromMark(selMark),
+			b.Mark(b.ShiftIndex(index, pos), selMark)
+			b.Mark(b.ShiftIndex(b.IndexFromMark(selMark),
 				utf8.RuneCountInString(selection)), insMark)
 		} else {
-			rc.Status = "No forward match."
+			return "No forward match."
 		}
 	}
+
+	return defaultStatus
 }
 
 // textInput inserts text into the focus, or performs another action depending
@@ -133,7 +128,7 @@ func textInput(buf *edit.Buffer, s string) {
 	buf.Insert(index, s)
 }
 
-// resize resizes the pane in the display
+// resize resizes the pane in the display.
 func resize(pane *Pane, width, height int) {
 	cols, rows := bufSize(width, height)
 	pane.Cols, pane.Rows = cols, rows
@@ -177,6 +172,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 	clickCount := 0
 	lastClick := time.Now()
 	var rightClickIndex edit.Index
+
 	for {
 		switch event := sdl.WaitEvent().(type) {
 		case *sdl.KeyDownEvent:
@@ -555,7 +551,9 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 						clickCount = 1
 					}
 					lastClick = time.Now()
-					click(rc, int(event.X), int(event.Y), clickCount, shift)
+					_, winHeight := rc.Window.GetSize()
+					click(rc.Pane.Buffer, winHeight, int(event.X),
+						int(event.Y), clickCount, shift)
 					render(rc)
 				} else if event.Button == sdl.BUTTON_RIGHT {
 					_, winHeight := rc.Window.GetSize()
@@ -564,7 +562,9 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 				}
 			} else if event.Type == sdl.MOUSEBUTTONUP &&
 				event.Button == sdl.BUTTON_RIGHT {
-				clickFind(rc, shift, int(event.X), int(event.Y))
+				_, winHeight := rc.Window.GetSize()
+				rc.Status = clickFind(rc.Pane.Buffer, shift, winHeight,
+					int(event.X), int(event.Y), rc.Status)
 				seeMark(rc.Pane.Buffer, insMark, rc.Pane.Rows)
 				warpMouseToSel(rc.Window, rc.Pane.Buffer)
 				render(rc)
@@ -572,7 +572,8 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 			rc.Pane.Separate()
 		case *sdl.MouseMotionEvent:
 			if event.State&sdl.ButtonLMask() != 0 {
-				click(rc, int(event.X), int(event.Y), 1, true)
+				_, h := rc.Window.GetSize()
+				click(rc.Pane.Buffer, h, int(event.X), int(event.Y), 1, true)
 				render(rc)
 			} else if event.State&sdl.ButtonRMask() != 0 {
 				_, winHeight := rc.Window.GetSize()

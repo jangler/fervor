@@ -18,11 +18,9 @@ func find(b *edit.Buffer, re *regexp.Regexp, forward bool,
 		return "No pattern to find."
 	}
 
-	selIndex := b.IndexFromMark(selMark)
-	insIndex := b.IndexFromMark(insMark)
-
+	sel, ins := b.IndexFromMark(selMark), b.IndexFromMark(insMark)
 	if forward {
-		_, index := order(selIndex, insIndex)
+		_, index := order(sel, ins)
 		text := b.Get(index, b.End())
 		if loc := re.FindStringIndex(text); loc != nil {
 			b.Mark(b.ShiftIndex(index, loc[0]), selMark)
@@ -32,7 +30,7 @@ func find(b *edit.Buffer, re *regexp.Regexp, forward bool,
 			return "No forward match."
 		}
 	} else {
-		index, _ := order(selIndex, insIndex)
+		index, _ := order(sel, ins)
 		text := b.Get(edit.Index{1, 0}, index)
 		if locs := re.FindAllStringIndex(text, -1); locs != nil {
 			loc := locs[len(locs)-1]

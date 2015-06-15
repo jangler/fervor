@@ -98,6 +98,7 @@ func main() {
 	initFlag()
 	log.SetFlags(log.Lshortfile)
 
+	// init SDL
 	runtime.LockOSThread()
 	sdl.Init(sdl.INIT_VIDEO)
 	defer sdl.Quit()
@@ -105,9 +106,9 @@ func main() {
 		log.Fatal(err)
 	}
 	defer ttf.Quit()
-
 	font := getFont()
 
+	// init buffer
 	var pane *Pane
 	var arg, status string
 	if flag.NArg() == 0 || flag.Arg(0) == "" {
@@ -125,11 +126,10 @@ func main() {
 	pane.SetTabWidth(4)
 	pane.SetSyntax()
 	pane.Mark(edit.Index{1, 0}, selMark, insMark)
-
 	win := createWindow(minPath(arg), font)
 	defer win.Destroy()
-
 	w, h := win.GetSize()
 	resize(pane, w, h)
+
 	eventLoop(pane, status, font, win)
 }
