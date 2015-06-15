@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"time"
 	"unsafe"
 
@@ -125,6 +126,7 @@ func runCmd(cmdString string) {
 				src[i] = byte(rand.Intn(256))
 			}
 			name := base32.StdEncoding.EncodeToString(src)
+			name = strings.TrimRight(name, "=")
 
 			// write command output to temp file
 			path := filepath.Join(os.TempDir(), name)
