@@ -36,7 +36,7 @@ type Pane struct {
 // getFont loads the default TTF from memory and returns it.
 func getFont() *ttf.Font {
 	// load font
-	data, err := Asset("data/DejaVuSansMono.ttf")
+	data, err := Asset("data/font.ttf")
 	if err != nil {
 		log.Fatal(err)
 	}
