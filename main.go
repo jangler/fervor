@@ -14,7 +14,7 @@ import (
 	"github.com/veandco/go-sdl2/sdl_ttf"
 )
 
-const version = "0.0.0"
+const version = "0.1.0"
 
 const (
 	insMark = iota // ID of the cursor/insertion mark
