@@ -35,7 +35,10 @@ Install via the [go command](http://golang.org/cmd/go/):
 
 	go get -u github.com/jangler/fervor
 
-The SDL2 and SDL2\_ttf libraries are required.
+Alternatively, download a binary distribution from
+<https://github.com/jangler/fervor/releases>.
+
+In either case, the SDL2 and SDL2\_ttf libraries are required.
 
 Usage
 -----
