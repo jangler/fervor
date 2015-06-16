@@ -13,7 +13,7 @@ even Notepad. Features include:
 - No GUI toolkit dependencies
 - Quick startup and low memory footprint
 - Asynchronous shell command execution and selection filtering
-- Syntax highlighting (currently for: C, Go, JSON, Make, Python, and Bash)
+- Syntax highlighting (currently for: C, Go, Python, Bash, JSON, and Make)
 
 Not included (yet):
 
@@ -24,6 +24,8 @@ Not included (yet):
 Not included (ever):
 
 - Tabs or panes. Use a good window manager instead!
+
+See also: [TODO.md](https://github.com/jangler/fervor/blob/master/TODO.md).
 
 This project is in alpha status--use at your own risk!
 
