@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/base32"
+	"flag"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -30,10 +31,22 @@ func init() {
 	}
 }
 
+// flags returns a []string of command line flags that have been set in a form
+// that can be passed as arguments to exec.Command().
+func flags() []string {
+	args := make([]string, flag.NFlag())
+	i := 0
+	flag.Visit(func(f *flag.Flag) {
+		args[i] = fmt.Sprintf("-%s=%v", f.Name, f.Value)
+		i++
+	})
+	return args
+}
+
 // newInstance opens a new instane of Fervor editing the given filename and
 // returns a status message.
 func newInstance(filename, defaultStatus string) string {
-	cmd := exec.Command(os.Args[0], filename)
+	cmd := exec.Command(os.Args[0], append(flags(), filename)...)
 	if err := cmd.Start(); err != nil {
 		return err.Error()
 	}
@@ -139,7 +152,7 @@ func runCmd(cmdString string) {
 			file.Close()
 
 			// open temp file in new window, then clean up
-			exec.Command(os.Args[0], path).Run()
+			exec.Command(os.Args[0], append(flags(), path)...).Run()
 			defer os.Remove(path)
 		}
 	}()

@@ -3,7 +3,6 @@ TODO
 
 0.2.0
 -----
-- Flags should be passed to newly spawned instance
 - .ini file
 	- Set options based on filetype?
 - Cycle through tab completion options when there are multiple matches
