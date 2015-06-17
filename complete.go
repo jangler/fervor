@@ -19,20 +19,35 @@ func init() {
 	}
 }
 
-// completeCmd completes the typed command name if there is exactly one match
-// in $PATH.
+// commonPrefix returns the longest common prefix of two strings.
+func commonPrefix(a, b string) string {
+	var prefix string
+	if len(b) < len(a) {
+		a, b = b, a
+	}
+	for i := len(a); i >= 0; i-- {
+		if a[:i] == b[:i] {
+			prefix = a[:i]
+			break
+		}
+	}
+	return prefix
+}
+
+// completeCmd completes the typed command name to the longest common prefix of
+// matches in $PATH.
 func completeCmd(cmd string) string {
 	paths := strings.Split(os.Getenv("PATH"), pathSep)
-	var match string
+	var prefix string
 	for _, path := range paths {
 		if f, err := os.Open(path); err == nil {
 			if names, err := f.Readdirnames(0); err == nil {
 				for _, name := range names {
 					if strings.HasPrefix(name, cmd) {
-						if match == "" || match == name { // links are OK
-							match = name
+						if prefix == "" {
+							prefix = name
 						} else {
-							return cmd
+							prefix = commonPrefix(prefix, name)
 						}
 					}
 				}
@@ -40,14 +55,14 @@ func completeCmd(cmd string) string {
 			f.Close()
 		}
 	}
-	if match != "" {
-		return match
+	if prefix == "" {
+		return cmd
 	}
-	return cmd
+	return prefix
 }
 
-// completePath completes the typed path if there is exactly one match in the
-// directory.
+// completePath comples the typed path to the longest common prefix of paths
+// in the directory.
 func completePath(path string, dirsOnly bool) string {
 	// read filenames from dir
 	absPath, err := filepath.Abs(path)
@@ -66,19 +81,19 @@ func completePath(path string, dirsOnly bool) string {
 	}
 
 	// return a match if there is exactly one
-	var match string
+	var prefix string
 	for _, name := range names {
 		if strings.HasPrefix(name, file) &&
 			(!dirsOnly || isDir(filepath.Join(dir, name))) {
-			if match == "" {
-				match = name
+			if prefix == "" {
+				prefix = name
 			} else {
-				return minPath(path)
+				prefix = commonPrefix(prefix, name)
 			}
 		}
 	}
-	if match != "" {
-		path = dir + match
+	if prefix != "" {
+		path = dir + prefix
 		if fi, err := os.Stat(path); err == nil && fi.IsDir() {
 			return minPath(path) + "/"
 		}
