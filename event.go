@@ -99,6 +99,21 @@ func clickFind(b *edit.Buffer, shift bool, winHeight, x, y int,
 	return defaultStatus
 }
 
+// deleteCharOrTab deletes a single character, or may delete a tabstop worth of
+// spaces if the expandtab flag is set.
+func deleteCharOrTab(b *edit.Buffer, index edit.Index, step int) {
+	if expandtabFlag {
+		start, end := order(index, b.ShiftIndex(index, step*int(tabstopFlag)))
+		if strings.Trim(b.Get(start, end), " ") == "" {
+			b.Delete(start, end)
+		} else {
+			b.Delete(order(index, b.ShiftIndex(index, step)))
+		}
+	} else {
+		b.Delete(order(index, b.ShiftIndex(index, step)))
+	}
+}
+
 // textInput inserts text into the focus, or performs another action depending
 // on the contents of the string.
 func textInput(buf *edit.Buffer, s string) {
@@ -196,7 +211,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					if sel := rc.Focus.IndexFromMark(selMark); sel != index {
 						rc.Focus.Delete(order(sel, index))
 					} else {
-						rc.Focus.Delete(rc.Focus.ShiftIndex(index, -1), index)
+						deleteCharOrTab(rc.Focus, index, -1)
 					}
 				}
 			case sdl.K_DELETE:
@@ -209,7 +224,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					if sel := rc.Focus.IndexFromMark(selMark); sel != index {
 						rc.Focus.Delete(order(sel, index))
 					} else {
-						rc.Focus.Delete(index, rc.Focus.ShiftIndex(index, 1))
+						deleteCharOrTab(rc.Focus, index, 1)
 					}
 				}
 				if rc.Focus == rc.Pane.Buffer {
@@ -419,7 +434,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 			case sdl.K_h:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
 					index := rc.Focus.IndexFromMark(insMark)
-					rc.Focus.Delete(rc.Focus.ShiftIndex(index, -1), index)
+					deleteCharOrTab(rc.Focus, index, -1)
 				}
 			case sdl.K_n:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {

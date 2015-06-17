@@ -3,15 +3,15 @@ TODO
 
 0.2.0
 -----
-- Backspace/delete should delete expanded tabs
+- Flags should be passed to newly spawned instance
+- .ini file
+	- Set options based on filetype?
 - Cycle through tab completion options when there are multiple matches
 - Navigate prompt histories with Up/Down:
 	- Find
 	- Go to line
 	- Pipe
 	- Run
-- .ini file
-	- Set options based on filetype?
 - Command to toggle line endings (CRLF/LF)
 - More syntax highlighting rules
 	- Ruby
