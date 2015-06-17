@@ -25,6 +25,7 @@ TODO
 	- Use C-i to unconditionally insert tab
 - Repeat last edit sequence (like . in Vim)
 - Use as filter (-filter flag?)
+- Color scheming?
 - In-editor help?
 - Set options dynamically?
 

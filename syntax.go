@@ -20,6 +20,7 @@ var syntaxMap = map[string]func() []edit.Rule{
 	"[bash]":   bashRules,
 	"[c]":      cRules,
 	"[go]":     goRules,
+	"[html]":   htmlRules,
 	"[ini]":    iniRules,
 	"[json]":   jsonRules,
 	"[make]":   makefileRules,
@@ -88,6 +89,24 @@ func goRules() []edit.Rule {
 		mustCompile(`\b0[xX][0-9a-fA-F]+\b`, literalId),
 		mustCompile(`\b(\d+\.\d*|\d*\.\d+|\d+)([eE][+-]?\d+)?i?\b`, literalId),
 		mustCompile(`\b\d+\bi`, literalId),
+	}
+}
+
+// htmlRules returns syntax highlighting rules for HTML.
+func htmlRules() []edit.Rule {
+	return []edit.Rule{
+		mustCompile(`<!(--.*--|DOCTYPE.*)>`, commentId),
+		mustCompile(`\b(a|abbr|address|area|article|aside|audio|b|base|`+
+			`bd[io]|blockquote|body|br|button|canvas|caption|cite|code|`+
+			`col(group)?|datalist|dd|del|details|dfn|dialog|div|dl|dt|`+
+			`em(bed)?|fieldset|fig(caption|ure)|footer|form|h[123456]|`+
+			`head|header|hr|html|i|iframe|img|input|ins|kbd|keygen|label|`+
+			`legend|li|link|main|map|mark|menu(item)?|meta|meter|nav|`+
+			`noscript|object|ol|opt(group|tion)|output|p|param|pre|progress|`+
+			`q|rp|rt|ruby|s|samp|script|section|select|small|source|span|`+
+			`strong|style|sub|summary|sup|table|tbody|td|textarea|tfoot|th|`+
+			`thead|time|title|tr|track|u|ul|var|video|wbr)\b`, keywordId),
+		mustCompile(`"(\\.|[^"])*?"`, literalId),
 	}
 }
 
