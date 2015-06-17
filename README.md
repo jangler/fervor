@@ -51,7 +51,7 @@ Usage
 	  -version=false: print version information and exit
 
 Default options can also be set through ~/fervor.ini or ~/.config/fervor.ini.
-See <https://github.com/jangler/fervor/blob/master/fervor.ini> for an example.
+See [fervor.ini](https://github.com/jangler/fervor/blob/master/fervor.ini) for an example.
 
 Key bindings
 ------------
