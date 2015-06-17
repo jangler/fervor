@@ -40,7 +40,7 @@ func getFont() *ttf.Font {
 	var err error
 	// if font flag is specified, try loading that font
 	if fontFlag != "" {
-		font, err = ttf.OpenFont(fontFlag, int(ptsizeFlag))
+		font, err = ttf.OpenFont(fontFlag, ptsizeFlag)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 		} else if !font.FaceIsFixedWidth() {
@@ -55,7 +55,7 @@ func getFont() *ttf.Font {
 			log.Fatal(err)
 		}
 		rw := sdl.RWFromMem(unsafe.Pointer(&data[0]), len(data))
-		font, err = ttf.OpenFontRW(rw, 1, int(ptsizeFlag))
+		font, err = ttf.OpenFontRW(rw, 1, ptsizeFlag)
 		if err != nil {
 			log.Fatal(err)
 		}

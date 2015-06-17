@@ -6,6 +6,8 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/user"
+	"path/filepath"
 	"runtime"
 	"strings"
 
@@ -22,29 +24,62 @@ const (
 )
 
 var (
-	expandtabFlag bool
-	fontFlag      string
-	ptsizeFlag    uint
-	tabstopFlag   uint
+	expandtabFlag = false
+	fontFlag      = ""
+	ptsizeFlag    = 12
+	tabstopFlag   = 8
+	versionFlag   = false
 )
 
-// initFlag processes command-line flags and arguments.
-func initFlag() {
+// readIni reads option defaults from the .ini file, if one exists.
+func readIni() {
+	if curUser, err := user.Current(); err == nil {
+		paths := []string{
+			filepath.Join(curUser.HomeDir, "fervor.ini"),
+			filepath.Join(curUser.HomeDir, ".config", "fervor.ini"),
+		}
+		for _, path := range paths {
+			if contents, err := ioutil.ReadFile(path); err == nil {
+				for _, line := range strings.Split(string(contents), "\n") {
+					// ignore comment lines
+					if strings.HasPrefix(line, ";") {
+						continue
+					}
+
+					tokens := strings.SplitN(line, "=", 2)
+					if len(tokens) == 2 {
+						flag.Set(tokens[0], tokens[1]) // ignore errors
+					}
+				}
+				break
+			}
+		}
+	} else {
+		log.Print(err)
+	}
+}
+
+// initFlags initializes the flag package.
+func initFlags() {
 	flag.Usage = func() {
 		fmt.Fprintf(os.Stderr, "Usage: %s [<option> ...] [<file>]\n",
 			os.Args[0])
 		fmt.Fprintln(os.Stderr, "\nOptions:")
 		flag.PrintDefaults()
 	}
-	flag.BoolVar(&expandtabFlag, "expandtab", false, "insert spaces using "+
-		"the Tab key")
-	flag.StringVar(&fontFlag, "font", "", "use the TTF at the given path")
-	flag.UintVar(&ptsizeFlag, "ptsize", 12, "set point size of font")
-	flag.UintVar(&tabstopFlag, "tabstop", 8,
+	flag.BoolVar(&expandtabFlag, "expandtab", expandtabFlag,
+		"insert spaces using the Tab key")
+	flag.StringVar(&fontFlag, "font", fontFlag,
+		"use the TTF at the given path")
+	flag.IntVar(&ptsizeFlag, "ptsize", ptsizeFlag, "set point size of font")
+	flag.IntVar(&tabstopFlag, "tabstop", tabstopFlag,
 		"set width of tab stops, in columns")
-	versionFlag := flag.Bool("version", false,
+	flag.BoolVar(&versionFlag, "version", versionFlag,
 		"print version information and exit")
+}
 
+// parseFlags processes command-line flags.
+func parseFlags() {
 	flag.Parse()
 
 	// you're joking, right?
@@ -55,7 +90,7 @@ func initFlag() {
 		tabstopFlag = 1
 	}
 
-	if *versionFlag {
+	if versionFlag {
 		fmt.Printf("%s version %s %s/%s\n", os.Args[0], version, runtime.GOOS,
 			runtime.GOARCH)
 		os.Exit(0)
@@ -116,8 +151,10 @@ func (p *Pane) SetSyntax() {
 }
 
 func main() {
-	initFlag()
 	log.SetFlags(log.Lshortfile)
+	initFlags()
+	readIni()
+	parseFlags()
 
 	// init SDL
 	runtime.LockOSThread()
@@ -139,12 +176,12 @@ func main() {
 	}
 	if buf, err := openFile(arg); err == nil {
 		status = fmt.Sprintf(`Opened "%s".`, minPath(arg))
-		pane = &Pane{buf, minPath(arg), int(tabstopFlag), 80, 25}
+		pane = &Pane{buf, minPath(arg), tabstopFlag, 80, 25}
 	} else {
 		status = fmt.Sprintf(`New file: "%s".`, minPath(arg))
-		pane = &Pane{edit.NewBuffer(), minPath(arg), int(tabstopFlag), 80, 25}
+		pane = &Pane{edit.NewBuffer(), minPath(arg), tabstopFlag, 80, 25}
 	}
-	pane.SetTabWidth(int(tabstopFlag))
+	pane.SetTabWidth(tabstopFlag)
 	pane.SetSyntax()
 	pane.Mark(edit.Index{1, 0}, selMark, insMark)
 	win := createWindow(minPath(arg), font)

@@ -18,7 +18,6 @@ even Notepad. Features include:
 Not included (yet):
 
 - Support for Windows-style (CRLF) line endings
-- Any form of configuration
 - A scrollbar
 
 Not included (ever):
@@ -45,7 +44,14 @@ Usage
 	Usage: fervor [<option> ...] [<file>]
 
 	Options:
+	  -expandtab=false: insert spaces using the Tab key
+	  -font="": use the TTF at the given path
+	  -ptsize=12: set point size of font
+	  -tabstop=8: set width of tab stops, in columns
 	  -version=false: print version information and exit
+
+Default options can also be set through ~/fervor.ini or ~/.config/fervor.ini.
+See <https://github.com/jangler/fervor/blob/master/fervor.ini> for an example.
 
 Key bindings
 ------------

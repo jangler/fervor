@@ -3,8 +3,7 @@ TODO
 
 0.2.0
 -----
-- .ini file
-	- Set options based on filetype?
+- Set options based on filetype
 - Cycle through tab completion options when there are multiple matches
 - Navigate prompt histories with Up/Down:
 	- Find
