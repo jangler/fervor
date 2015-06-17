@@ -128,6 +128,8 @@ func (p *Pane) SetSyntax() {
 		p.Buffer.SetSyntax(goRules())
 	} else if strings.HasSuffix(p.Title, ".json") {
 		p.Buffer.SetSyntax(jsonRules())
+	} else if strings.HasSuffix(strings.ToLower(p.Title), ".ini") {
+		p.Buffer.SetSyntax(iniRules())
 	} else if strings.ToLower(p.Title) == "makefile" {
 		p.Buffer.SetSyntax(makefileRules())
 	} else if strings.HasSuffix(p.Title, ".py") {

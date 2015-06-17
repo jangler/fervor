@@ -91,6 +91,14 @@ func jsonRules() []edit.Rule {
 	}
 }
 
+// iniRules returns syntax highlighting rules for INI files.
+func iniRules() []edit.Rule {
+	return []edit.Rule{
+		mustCompile(`(^| )[;#].*$`, commentId),
+		mustCompile(`^\[.*\]$`, literalId),
+	}
+}
+
 // makefileRules returns syntax highlighting rules for makefiles.
 func makefileRules() []edit.Rule {
 	return []edit.Rule{
