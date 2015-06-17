@@ -25,6 +25,19 @@ const (
 	saveAsPrompt       = "Save as: "
 )
 
+// UpdateFlags updates file-dependent flags for the RenderContext.
+func (rc *RenderContext) UpdateFlags() {
+	prevFontFlag, prevPtsizeFlag := fontFlag, ptsizeFlag
+	syntaxRules := setFileFlags(rc.Pane.Title,
+		rc.Pane.Get(edit.Index{1, 0}, edit.Index{1, 1 << 30}))
+	if fontFlag != prevFontFlag || ptsizeFlag != prevPtsizeFlag {
+		rc.Font = getFont()
+	}
+	rc.Pane.SetSyntax(syntaxRules)
+	rc.Pane.TabWidth = tabstopFlag
+	rc.Pane.SetTabWidth(tabstopFlag)
+}
+
 // EnterInput exits prompt mode, taking action based on the prompt string and
 // input text. Returns false if the application should quit.
 func (rc *RenderContext) EnterInput() bool {
@@ -87,9 +100,9 @@ func (rc *RenderContext) EnterInput() bool {
 		rc.Pane.Mark(edit.Index{1, 0}, selMark, insMark)
 		rc.Pane.Title = minPath(input)
 		rc.Window.SetTitle(rc.Pane.Title)
-		rc.Pane.SetSyntax()
 		rc.Pane.ResetModified()
 		rc.Pane.ResetUndo()
+		rc.UpdateFlags()
 	case openNewPrompt:
 		rc.Status = newInstance(expandVars(input), rc.Pane.Title)
 	case pipePrompt:
@@ -125,8 +138,8 @@ func (rc *RenderContext) EnterInput() bool {
 			rc.Pane.Title = minPath(input)
 			rc.Status = fmt.Sprintf(`Saved "%s".`, rc.Pane.Title)
 			rc.Window.SetTitle(rc.Pane.Title)
-			rc.Pane.SetSyntax()
 			rc.Pane.ResetModified()
+			rc.UpdateFlags()
 		} else {
 			rc.Status = err.Error()
 			rc.Pane.Title = prevTitle

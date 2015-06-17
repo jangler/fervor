@@ -13,7 +13,7 @@ even Notepad. Features include:
 - No GUI toolkit dependencies
 - Quick startup and low memory footprint
 - Asynchronous shell command execution and selection filtering
-- Syntax highlighting (currently for: C, Go, Python, Bash, JSON, and Make)
+- Syntax highlighting (currently for: C, Go, Python, Bash, JSON, Make, and INI)
 
 Not included (yet):
 
@@ -50,8 +50,10 @@ Usage
 	  -tabstop=8: set width of tab stops, in columns
 	  -version=false: print version information and exit
 
-Default options can also be set through ~/fervor.ini or ~/.config/fervor.ini.
-See [fervor.ini](https://github.com/jangler/fervor/blob/master/fervor.ini) for an example.
+Default options and filetype-specific options can also be set through
+~/fervor.ini or ~/.config/fervor.ini. See
+[fervor.ini](https://github.com/jangler/fervor/blob/master/fervor.ini) for an
+example.
 
 Key bindings
 ------------

@@ -16,6 +16,16 @@ const (
 	literalId
 )
 
+var syntaxMap = map[string]func() []edit.Rule{
+	"[bash]":   bashRules,
+	"[c]":      cRules,
+	"[go]":     goRules,
+	"[ini]":    iniRules,
+	"[json]":   jsonRules,
+	"[make]":   makefileRules,
+	"[python]": pythonRules,
+}
+
 // bashRules returns syntax highlighting rules for Bash.
 func bashRules() []edit.Rule {
 	// Not sure how "complete" this is. All the builtins are accounted for, but
@@ -95,7 +105,7 @@ func jsonRules() []edit.Rule {
 func iniRules() []edit.Rule {
 	return []edit.Rule{
 		mustCompile(`(^| )[;#].*$`, commentId),
-		mustCompile(`^\[.*\]$`, literalId),
+		mustCompile(`^\[.*\]$`, keywordId),
 	}
 }
 

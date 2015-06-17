@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 
@@ -31,6 +32,9 @@ var (
 	versionFlag   = false
 )
 
+var sectionFlags = make(map[string]map[string]string)
+var shebangRegexp = regexp.MustCompile(`^#!(/usr/bin/env |/.+/)(.+)( |$)`)
+
 // readIni reads option defaults from the .ini file, if one exists.
 func readIni() {
 	if curUser, err := user.Current(); err == nil {
@@ -39,23 +43,92 @@ func readIni() {
 			filepath.Join(curUser.HomeDir, ".config", "fervor.ini"),
 		}
 		for _, path := range paths {
-			if contents, err := ioutil.ReadFile(path); err == nil {
-				for _, line := range strings.Split(string(contents), "\n") {
-					// ignore comment lines
-					if strings.HasPrefix(line, ";") {
-						continue
-					}
+			contents, err := ioutil.ReadFile(path)
+			if err != nil {
+				continue
+			}
+			section := ""
+			sectionFlags[""] = make(map[string]string)
+			for _, line := range strings.Split(string(contents), "\n") {
+				// ignore comment lines
+				if strings.HasPrefix(line, ";") {
+					continue
+				}
 
+				if match, _ := regexp.MatchString(`^\[.+\]$`, line); match {
+					section = line
+					sectionFlags[section] = make(map[string]string)
+				} else {
 					tokens := strings.SplitN(line, "=", 2)
 					if len(tokens) == 2 {
-						flag.Set(tokens[0], tokens[1]) // ignore errors
+						if section == "" {
+							flag.Set(tokens[0], tokens[1]) // ignore errors
+						}
+						sectionFlags[section][tokens[0]] = tokens[1]
 					}
 				}
-				break
 			}
+			break // successfully read .ini file
 		}
 	} else {
 		log.Print(err)
+	}
+}
+
+// setFileFlags sets flags based on INI settings, the current file path, and
+// the first line of the buffer, and returns syntax rules to be used for the
+// file.
+func setFileFlags(path, line string) []edit.Rule {
+	fn := filepath.Base(path)
+	var sb string
+	if subs := shebangRegexp.FindStringSubmatch(line); subs != nil {
+		sb = subs[2]
+	}
+
+	// first, reset flags to defaults
+	for k, v := range sectionFlags[""] {
+		flag.Set(k, v) // ignore errors
+	}
+
+	for section, flags := range sectionFlags {
+		match := false
+		if globs, ok := flags["filename"]; ok {
+			for _, glob := range strings.Split(globs, ";") {
+				if match, _ = filepath.Match(glob, fn); match {
+					break
+				}
+			}
+		}
+		if shebangs, ok := flags["shebang"]; ok && !match && sb != "" {
+			for _, shebang := range strings.Split(shebangs, ";") {
+				if shebang == sb {
+					match = true
+					break
+				}
+			}
+		}
+		if match {
+			for k, v := range flags {
+				flag.Set(k, v) // ignore errors
+			}
+			clampFlags()
+			if syntaxFunc, ok := syntaxMap[section]; ok {
+				return syntaxFunc()
+			}
+			break
+		}
+	}
+
+	return []edit.Rule{}
+}
+
+// clampFlags keeps flags within reasonable bounds.
+func clampFlags() {
+	if ptsizeFlag < 8 {
+		ptsizeFlag = 8
+	}
+	if tabstopFlag < 1 {
+		tabstopFlag = 1
 	}
 }
 
@@ -81,14 +154,7 @@ func initFlags() {
 // parseFlags processes command-line flags.
 func parseFlags() {
 	flag.Parse()
-
-	// you're joking, right?
-	if ptsizeFlag < 8 {
-		ptsizeFlag = 8
-	}
-	if tabstopFlag < 1 {
-		tabstopFlag = 1
-	}
+	clampFlags()
 
 	if versionFlag {
 		fmt.Printf("%s version %s %s/%s\n", os.Args[0], version, runtime.GOOS,
@@ -99,6 +165,13 @@ func parseFlags() {
 	if flag.NArg() > 1 {
 		flag.Usage()
 		os.Exit(1)
+	}
+
+	sectionFlags[""] = map[string]string{
+		"expandtab": fmt.Sprintf("%v", expandtabFlag),
+		"font":      fmt.Sprintf("%v", fontFlag),
+		"ptsize":    fmt.Sprintf("%v", ptsizeFlag),
+		"tabstop":   fmt.Sprintf("%v", tabstopFlag),
 	}
 }
 
@@ -117,39 +190,10 @@ func openFile(path string) (*edit.Buffer, error) {
 	}
 	buf.ResetModified()
 	buf.ResetUndo()
+	syntaxRules := setFileFlags(path,
+		buf.Get(edit.Index{1, 0}, edit.Index{1, 1 << 30}))
+	buf.SetSyntax(syntaxRules)
 	return buf, nil
-}
-
-// SetSyntax automatically sets the syntax rules for p.
-func (p *Pane) SetSyntax() {
-	if strings.HasSuffix(p.Title, ".c") || strings.HasSuffix(p.Title, ".h") {
-		p.Buffer.SetSyntax(cRules())
-	} else if strings.HasSuffix(p.Title, ".go") {
-		p.Buffer.SetSyntax(goRules())
-	} else if strings.HasSuffix(p.Title, ".json") {
-		p.Buffer.SetSyntax(jsonRules())
-	} else if strings.HasSuffix(strings.ToLower(p.Title), ".ini") {
-		p.Buffer.SetSyntax(iniRules())
-	} else if strings.ToLower(p.Title) == "makefile" {
-		p.Buffer.SetSyntax(makefileRules())
-	} else if strings.HasSuffix(p.Title, ".py") {
-		p.Buffer.SetSyntax(pythonRules())
-	} else if strings.HasSuffix(p.Title, ".sh") {
-		p.Buffer.SetSyntax(pythonRules())
-	} else {
-		firstLine := p.Buffer.Get(edit.Index{1, 0}, edit.Index{1, 1 << 30})
-		if strings.HasPrefix(firstLine, "#!") {
-			if strings.Contains(firstLine, "python") {
-				p.Buffer.SetSyntax(pythonRules())
-			} else if strings.Contains(firstLine, "sh") {
-				p.Buffer.SetSyntax(bashRules())
-			} else {
-				p.Buffer.SetSyntax([]edit.Rule{})
-			}
-		} else {
-			p.Buffer.SetSyntax([]edit.Rule{})
-		}
-	}
 }
 
 func main() {
@@ -166,7 +210,6 @@ func main() {
 		log.Fatal(err)
 	}
 	defer ttf.Quit()
-	font := getFont()
 
 	// init buffer
 	var pane *Pane
@@ -184,8 +227,8 @@ func main() {
 		pane = &Pane{edit.NewBuffer(), minPath(arg), tabstopFlag, 80, 25}
 	}
 	pane.SetTabWidth(tabstopFlag)
-	pane.SetSyntax()
 	pane.Mark(edit.Index{1, 0}, selMark, insMark)
+	font := getFont()
 	win := createWindow(minPath(arg), font)
 	defer win.Destroy()
 	w, h := win.GetSize()
