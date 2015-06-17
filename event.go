@@ -322,7 +322,13 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 				}
 			case sdl.K_TAB:
 				if rc.Focus == rc.Pane.Buffer {
-					textInput(rc.Focus, "\t")
+					if expandtabFlag {
+						for i := 0; i < int(tabstopFlag); i++ {
+							textInput(rc.Focus, " ")
+						}
+					} else {
+						textInput(rc.Focus, "\t")
+					}
 				} else {
 					input := rc.Input.Get(edit.Index{1, 0}, rc.Input.End())
 					input = expandVars(input)

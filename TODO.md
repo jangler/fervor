@@ -3,17 +3,13 @@ TODO
 
 0.2.0
 -----
+- Backspace/delete should delete expanded tabs
 - Cycle through tab completion options when there are multiple matches
 - Navigate prompt histories with Up/Down:
 	- Find
 	- Go to line
 	- Pipe
 	- Run
-- Command-line options
-	- -font
-	- -ptsize
-	- -tabstop
-	- -expandtab
 - .ini file
 	- Set options based on filetype?
 - Command to toggle line endings (CRLF/LF)

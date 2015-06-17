@@ -21,6 +21,13 @@ const (
 	selMark        // ID of the selection anchor mark
 )
 
+var (
+	expandtabFlag bool
+	fontFlag      string
+	ptsizeFlag    uint
+	tabstopFlag   uint
+)
+
 // initFlag processes command-line flags and arguments.
 func initFlag() {
 	flag.Usage = func() {
@@ -29,10 +36,24 @@ func initFlag() {
 		fmt.Fprintln(os.Stderr, "\nOptions:")
 		flag.PrintDefaults()
 	}
-	versionFlag := flag.Bool("version", false, "print version information "+
-		"and exit")
+	flag.BoolVar(&expandtabFlag, "expandtab", false, "insert spaces using "+
+		"the Tab key")
+	flag.StringVar(&fontFlag, "font", "", "use the TTF at the given path")
+	flag.UintVar(&ptsizeFlag, "ptsize", 12, "set point size of font")
+	flag.UintVar(&tabstopFlag, "tabstop", 8,
+		"set width of tab stops, in columns")
+	versionFlag := flag.Bool("version", false,
+		"print version information and exit")
 
 	flag.Parse()
+
+	// you're joking, right?
+	if ptsizeFlag < 8 {
+		ptsizeFlag = 8
+	}
+	if tabstopFlag < 1 {
+		tabstopFlag = 1
+	}
 
 	if *versionFlag {
 		fmt.Printf("%s version %s %s/%s\n", os.Args[0], version, runtime.GOOS,
@@ -118,12 +139,12 @@ func main() {
 	}
 	if buf, err := openFile(arg); err == nil {
 		status = fmt.Sprintf(`Opened "%s".`, minPath(arg))
-		pane = &Pane{buf, minPath(arg), 4, 80, 25}
+		pane = &Pane{buf, minPath(arg), int(tabstopFlag), 80, 25}
 	} else {
 		status = fmt.Sprintf(`New file: "%s".`, minPath(arg))
-		pane = &Pane{edit.NewBuffer(), minPath(arg), 4, 80, 25}
+		pane = &Pane{edit.NewBuffer(), minPath(arg), int(tabstopFlag), 80, 25}
 	}
-	pane.SetTabWidth(4)
+	pane.SetTabWidth(int(tabstopFlag))
 	pane.SetSyntax()
 	pane.Mark(edit.Index{1, 0}, selMark, insMark)
 	win := createWindow(minPath(arg), font)

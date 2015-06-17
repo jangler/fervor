@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"log"
+	"os"
 	"regexp"
 	"unicode/utf8"
 	"unsafe"
@@ -35,15 +36,29 @@ type Pane struct {
 
 // getFont loads the default TTF from memory and returns it.
 func getFont() *ttf.Font {
-	// load font
-	data, err := Asset("data/font.ttf")
-	if err != nil {
-		log.Fatal(err)
+	var font *ttf.Font
+	var err error
+	// if font flag is specified, try loading that font
+	if fontFlag != "" {
+		font, err = ttf.OpenFont(fontFlag, int(ptsizeFlag))
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+		} else if !font.FaceIsFixedWidth() {
+			fmt.Fprintf(os.Stderr, "%s is not fixed-width\n", fontFlag)
+			font = nil
+		}
 	}
-	rw := sdl.RWFromMem(unsafe.Pointer(&data[0]), len(data))
-	font, err := ttf.OpenFontRW(rw, 1, 12)
-	if err != nil {
-		log.Fatal(err)
+	if font == nil {
+		// fall back to loading built-in font
+		data, err := Asset("data/font.ttf")
+		if err != nil {
+			log.Fatal(err)
+		}
+		rw := sdl.RWFromMem(unsafe.Pointer(&data[0]), len(data))
+		font, err = ttf.OpenFontRW(rw, 1, int(ptsizeFlag))
+		if err != nil {
+			log.Fatal(err)
+		}
 	}
 
 	// set globally accessible font dimensions
@@ -152,7 +167,7 @@ func drawBuffer(b *edit.Buffer, font *ttf.Font, dst *sdl.Surface,
 		if focused && i == row {
 			// draw cursor
 			dst.FillRect(&sdl.Rect{int32(padPx + fontWidth*col), int32(y),
-				1, int32(fontHeight)}, fgColor.Uint32())
+				1 + int32(ptsizeFlag)/18, int32(fontHeight)}, fgColor.Uint32())
 		}
 
 		y += fontHeight
@@ -208,7 +223,7 @@ func drawStatusLine(dst *sdl.Surface, font *ttf.Font, s string,
 			statusBgColor, dst, x, y)
 		index := input.IndexFromMark(insMark)
 		dst.FillRect(&sdl.Rect{int32(x + fontWidth*index.Char), int32(y),
-			1, int32(fontHeight)}, fgColor.Uint32())
+			1 + int32(ptsizeFlag)/18, int32(fontHeight)}, fgColor.Uint32())
 	} else if s == pane.Title {
 		// draw cursor pos
 		index := pane.IndexFromMark(insMark)
