@@ -48,6 +48,9 @@ func completeCmd(cmd string) string {
 							prefix = name
 						} else {
 							prefix = commonPrefix(prefix, name)
+							if prefix == "" {
+								return cmd
+							}
 						}
 					}
 				}
@@ -69,7 +72,12 @@ func completePath(path string, dirsOnly bool) string {
 	if err != nil {
 		return path
 	}
-	dir, file := filepath.Split(absPath)
+	var dir, file string
+	if strings.HasSuffix(path, "/") {
+		dir = absPath
+	} else {
+		dir, file = filepath.Split(absPath)
+	}
 	f, err := os.Open(dir)
 	if err != nil {
 		return path
@@ -88,15 +96,17 @@ func completePath(path string, dirsOnly bool) string {
 			if prefix == "" {
 				prefix = name
 			} else {
-				prefix = commonPrefix(prefix, name)
+				if prefix = commonPrefix(prefix, name); prefix == "" {
+					break
+				}
 			}
 		}
 	}
 	if prefix != "" {
-		path = dir + prefix
-		if fi, err := os.Stat(path); err == nil && fi.IsDir() {
-			return minPath(path) + "/"
-		}
+		path = filepath.Join(dir, prefix)
+	}
+	if fi, err := os.Stat(path); err == nil && fi.IsDir() {
+		return minPath(path) + "/"
 	}
 	return minPath(path)
 }
