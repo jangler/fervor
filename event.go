@@ -175,6 +175,15 @@ func warpMouseToSel(w *sdl.Window, b *edit.Buffer) {
 	w.WarpMouseInWindow(int(x), int(y))
 }
 
+// getHistory gets the appropriate history for the given prompt.
+func getHistory(histories map[string]*history, prompt string) *history {
+	key := strings.Split(prompt, " ")[0]
+	if histories[key] == nil {
+		histories[key] = &history{}
+	}
+	return histories[key]
+}
+
 // eventLoop handles SDL events until quit is requested.
 func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 	userEventType = sdl.RegisterEvents(1)
@@ -187,6 +196,7 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 	clickCount := 0
 	lastClick := time.Now()
 	var rightClickIndex edit.Index
+	histories := make(map[string]*history)
 
 	for {
 		switch event := sdl.WaitEvent().(type) {
@@ -241,6 +251,10 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 							selMark)
 					}
 					rc.Pane.Separate()
+				} else {
+					input := getHistory(histories, rc.Status).next()
+					rc.Input.Delete(edit.Index{1, 0}, rc.Input.End())
+					rc.Input.Insert(edit.Index{1, 0}, input)
 				}
 			case sdl.K_ESCAPE:
 				if rc.Focus == rc.Input {
@@ -316,6 +330,8 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 				if rc.Focus == rc.Pane.Buffer {
 					textInput(rc.Focus, "\n")
 				} else {
+					input := rc.Input.Get(edit.Index{1, 0}, rc.Input.End())
+					getHistory(histories, rc.Status).appendString(input)
 					if !rc.EnterInput() {
 						return
 					}
@@ -377,6 +393,11 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 							selMark)
 					}
 					rc.Pane.Separate()
+				} else {
+					input := rc.Input.Get(edit.Index{1, 0}, rc.Input.End())
+					input = getHistory(histories, rc.Status).prev(input)
+					rc.Input.Delete(edit.Index{1, 0}, rc.Input.End())
+					rc.Input.Insert(edit.Index{1, 0}, input)
 				}
 			case sdl.K_a:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {

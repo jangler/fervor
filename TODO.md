@@ -3,15 +3,9 @@ TODO
 
 0.2.0
 -----
-- Navigate prompt histories with Up/Down:
-	- Find
-	- Go to line
-	- Pipe
-	- Run
 - Command to toggle line endings (CRLF/LF)
 - More syntax highlighting rules
 	- Ruby
-	- HTML
 	- JavaScript
 	- CSS
 	- SVG
