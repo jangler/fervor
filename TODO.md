@@ -3,7 +3,6 @@ TODO
 
 0.2.0
 -----
-- Command to toggle line endings (CRLF/LF)
 - More syntax highlighting rules
 	- Ruby
 	- JavaScript

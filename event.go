@@ -154,6 +154,9 @@ func resize(pane *Pane, width, height int) {
 // title.
 func saveFile(pane *Pane) error {
 	text := pane.Get(edit.Index{1, 0}, pane.End()) + "\n"
+	if pane.LineEnding != "\n" {
+		text = strings.Replace(text, "\n", pane.LineEnding, -1)
+	}
 	path, err := filepath.Abs(expandVars(pane.Title))
 	if err != nil {
 		return err
@@ -457,6 +460,17 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					index := rc.Focus.IndexFromMark(insMark)
 					deleteCharOrTab(rc.Focus, index, -1)
 				}
+			case sdl.K_l:
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 &&
+					rc.Focus != rc.Input {
+					if rc.Pane.LineEnding == "\n" {
+						rc.Pane.LineEnding = "\r\n"
+						rc.Status = "Using DOS line endings."
+					} else {
+						rc.Pane.LineEnding = "\n"
+						rc.Status = "Using Unix line endings."
+					}
+				}
 			case sdl.K_n:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
 					if event.Keysym.Mod&sdl.KMOD_SHIFT != 0 {
@@ -517,6 +531,9 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 						if err := saveFile(rc.Pane); err == nil {
 							rc.Status = fmt.Sprintf(`Saved "%s".`,
 								rc.Pane.Title)
+							if rc.Pane.LineEnding == "\r\n" {
+								rc.Status += " [DOS]"
+							}
 						} else {
 							rc.Status = err.Error()
 						}

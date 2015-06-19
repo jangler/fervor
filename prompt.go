@@ -97,6 +97,10 @@ func (rc *RenderContext) EnterInput() bool {
 		} else {
 			rc.Status = fmt.Sprintf(`New file: "%s".`, minPath(input))
 		}
+		rc.Pane.LineEnding = lineEnding(rc.Pane.Buffer)
+		if rc.Pane.LineEnding == "\r\n" {
+			rc.Status += " [DOS]"
+		}
 		rc.Pane.Mark(edit.Index{1, 0}, selMark, insMark)
 		rc.Pane.Title = minPath(input)
 		rc.Window.SetTitle(rc.Pane.Title)
@@ -137,6 +141,9 @@ func (rc *RenderContext) EnterInput() bool {
 		if err := saveFile(rc.Pane); err == nil {
 			rc.Pane.Title = minPath(input)
 			rc.Status = fmt.Sprintf(`Saved "%s".`, rc.Pane.Title)
+			if rc.Pane.LineEnding == "\r\n" {
+				rc.Status += " [DOS]"
+			}
 			rc.Window.SetTitle(rc.Pane.Title)
 			rc.Pane.ResetModified()
 			rc.UpdateFlags()

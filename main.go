@@ -196,6 +196,18 @@ func openFile(path string) (*edit.Buffer, error) {
 	return buf, nil
 }
 
+// lineEnding returns the line ending string used for a buffer, and converts
+// the buffer to Unix line endings if it uses DOS line endings.
+func lineEnding(b *edit.Buffer) string {
+	if strings.Contains(b.Get(edit.Index{1, 0}, edit.Index{2, 0}), "\r\n") {
+		text := b.Get(edit.Index{1, 0}, b.End())
+		b.Delete(edit.Index{1, 0}, b.End())
+		b.Insert(edit.Index{1, 0}, strings.Replace(text, "\r", "", -1))
+		return "\r\n"
+	}
+	return "\n"
+}
+
 func main() {
 	log.SetFlags(log.Lshortfile)
 	initFlags()
@@ -212,19 +224,23 @@ func main() {
 	defer ttf.Quit()
 
 	// init buffer
-	var pane *Pane
 	var arg, status string
 	if flag.NArg() == 0 || flag.Arg(0) == "" {
 		arg = os.DevNull
 	} else {
 		arg = flag.Arg(0)
 	}
-	if buf, err := openFile(arg); err == nil {
+	var buf *edit.Buffer
+	var err error
+	if buf, err = openFile(arg); err == nil {
 		status = fmt.Sprintf(`Opened "%s".`, minPath(arg))
-		pane = &Pane{buf, minPath(arg), tabstopFlag, 80, 25}
 	} else {
 		status = fmt.Sprintf(`New file: "%s".`, minPath(arg))
-		pane = &Pane{edit.NewBuffer(), minPath(arg), tabstopFlag, 80, 25}
+		buf = edit.NewBuffer()
+	}
+	pane := &Pane{buf, minPath(arg), tabstopFlag, 80, 25, lineEnding(buf)}
+	if pane.LineEnding == "\r\n" {
+		status += " [DOS]"
 	}
 	pane.SetTabWidth(tabstopFlag)
 	pane.Mark(edit.Index{1, 0}, selMark, insMark)

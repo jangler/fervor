@@ -32,6 +32,7 @@ type Pane struct {
 	Title      string
 	TabWidth   int
 	Cols, Rows int
+	LineEnding string
 }
 
 // getFont loads the default TTF from memory and returns it.
