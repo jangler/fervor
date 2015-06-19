@@ -13,8 +13,8 @@ even Notepad. Features include:
 - No GUI toolkit dependencies
 - Quick startup and low memory footprint
 - Asynchronous shell command execution and selection filtering
-- Syntax highlighting (currently for: C, Go, Python, Bash, HTML, JSON, Make,
-  Lua, and INI)
+- Syntax highlighting (currently for: C, Go, Python, Bash, HTML, CSS, JSON,
+  Make, Lua, and INI)
 
 Not included (yet):
 
@@ -30,9 +30,9 @@ This project is in alpha status--use at your own risk!
 
 Installation
 ------------
-Install via the [go command](http://golang.org/cmd/go/):
+Install or update via the [go command](http://golang.org/cmd/go/):
 
-	go get -u github.com/jangler/fervor
+	go get -u github.com/jangler/{edit,fervor}
 
 Alternatively, download a binary distribution from
 <https://github.com/jangler/fervor/releases>.

@@ -19,6 +19,7 @@ const (
 var syntaxMap = map[string]func() []edit.Rule{
 	"[bash]":   bashRules,
 	"[c]":      cRules,
+	"[css]":    cssRules,
 	"[go]":     goRules,
 	"[html]":   htmlRules,
 	"[ini]":    iniRules,
@@ -67,6 +68,15 @@ func cRules() []edit.Rule {
 			`[fFlL]?\b`, literalId),
 		mustCompile(`\b(0([bB][01]+|[0-7]+|[xX][0-9a-fA-F]+)|\d+)`+
 			`([uU]?[lL]?|[lL]?[uU]?)\b`, literalId),
+	}
+}
+
+// cssRules returns syntax highlighting rules for CSS.
+func cssRules() []edit.Rule {
+	return []edit.Rule{
+		mustCompile(`/\*.*?\*/`, commentId),
+		mustCompile(`^\S*[^:] `, keywordId),
+		mustCompile(`\S+;`, literalId),
 	}
 }
 
