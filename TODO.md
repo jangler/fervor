@@ -5,7 +5,6 @@ TODO
 -----
 - More syntax highlighting rules
 	- Ruby
-	- JavaScript
 	- SVG
 
 0.3.0

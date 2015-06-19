@@ -17,16 +17,17 @@ const (
 )
 
 var syntaxMap = map[string]func() []edit.Rule{
-	"[bash]":   bashRules,
-	"[c]":      cRules,
-	"[css]":    cssRules,
-	"[go]":     goRules,
-	"[html]":   htmlRules,
-	"[ini]":    iniRules,
-	"[json]":   jsonRules,
-	"[lua]":    luaRules,
-	"[make]":   makefileRules,
-	"[python]": pythonRules,
+	"[bash]":       bashRules,
+	"[c]":          cRules,
+	"[css]":        cssRules,
+	"[go]":         goRules,
+	"[html]":       htmlRules,
+	"[ini]":        iniRules,
+	"[javascript]": javaScriptRules,
+	"[json]":       jsonRules,
+	"[lua]":        luaRules,
+	"[make]":       makefileRules,
+	"[python]":     pythonRules,
 }
 
 // bashRules returns syntax highlighting rules for Bash.
@@ -117,7 +118,7 @@ func htmlRules() []edit.Rule {
 			`q|rp|rt|ruby|s|samp|script|section|select|small|source|span|`+
 			`strong|style|sub|summary|sup|table|tbody|td|textarea|tfoot|th|`+
 			`thead|time|title|tr|track|u|ul|var|video|wbr)\b`, keywordId),
-		mustCompile(`"(\\.|[^"])*?"`, literalId),
+		mustCompile(`'(\\.|[^'])*?'|"(\\.|[^"])*?"`, literalId),
 	}
 }
 
@@ -126,6 +127,22 @@ func iniRules() []edit.Rule {
 	return []edit.Rule{
 		mustCompile(`(^| )[;#].*$`, commentId),
 		mustCompile(`^\[.*\]$`, keywordId),
+	}
+}
+
+// javaScriptRules returns syntax highlighting rules for JavaScript.
+func javaScriptRules() []edit.Rule {
+	return []edit.Rule{
+		mustCompile(`//.+?$`, commentId),
+		mustCompile(`/\*.*?\*/`, commentId),
+		mustCompile(`\b(break|case|catch|continue|debugger|default|delete|`+
+			`do|else|finally|for|function|if|in|instanceof|new|return|switch|`+
+			`this|throw|try|typeof|var|void|while|with)\b`, keywordId),
+		mustCompile(`\b(false|NaN|null|true|undefined)\b`, literalId),
+		mustCompile(`\b0[xX][0-9a-fA-F]+\b`, literalId),
+		mustCompile(`\b(\d+\.\d*|\d*\.\d+|\d+)([Ee][+-]?\d+)?\b`, literalId),
+		mustCompile(`'(\\.|[^'])*?'|"(\\.|[^"])*?"`, literalId),
+		// missing: regexp literals, because of confusion with division
 	}
 }
 
