@@ -135,10 +135,13 @@ func clampFlags() {
 // initFlags initializes the flag package.
 func initFlags() {
 	flag.Usage = func() {
-		fmt.Fprintf(os.Stderr, "Usage: %s [<option> ...] [<file>]\n",
+		fmt.Fprintf(os.Stderr, "Usage: %s [<option> ...] [<file> ...]\n",
 			os.Args[0])
 		fmt.Fprintln(os.Stderr, "\nOptions:")
 		flag.PrintDefaults()
+		fmt.Fprintln(os.Stderr, `
+Global and file-specific default options can be specified in either
+~/fervor.ini or ~/.config/fervor.ini.`)
 	}
 	flag.BoolVar(&expandtabFlag, "expandtab", expandtabFlag,
 		"insert spaces using the Tab key")
@@ -160,11 +163,6 @@ func parseFlags() {
 		fmt.Printf("%s version %s %s/%s\n", os.Args[0], version, runtime.GOOS,
 			runtime.GOARCH)
 		os.Exit(0)
-	}
-
-	if flag.NArg() > 1 {
-		flag.Usage()
-		os.Exit(1)
 	}
 
 	sectionFlags[""] = map[string]string{
@@ -222,6 +220,11 @@ func main() {
 		log.Fatal(err)
 	}
 	defer ttf.Quit()
+
+	// open new instances for other file args
+	for _, arg := range flag.Args()[1:] {
+		newInstance(arg, "")
+	}
 
 	// init buffer
 	var arg, status string

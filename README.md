@@ -18,7 +18,6 @@ even Notepad. Features include:
 
 Not included (yet):
 
-- Support for Windows-style (CRLF) line endings
 - A scrollbar
 
 Not included (ever):
@@ -42,7 +41,7 @@ In either case, the SDL2 and SDL2\_ttf libraries are required.
 
 Usage
 -----
-	Usage: fervor [<option> ...] [<file>]
+	Usage: fervor [<option> ...] [<file> ...]
 
 	Options:
 	  -expandtab=false: insert spaces using the Tab key
@@ -51,10 +50,11 @@ Usage
 	  -tabstop=8: set width of tab stops, in columns
 	  -version=false: print version information and exit
 
-Default options and filetype-specific options can also be set through
-~/fervor.ini or ~/.config/fervor.ini. See
-[fervor.ini](https://github.com/jangler/fervor/blob/master/fervor.ini) for an
-example.
+	Global and file-specific default options can be specified in either
+	~/fervor.ini or ~/.config/fervor.ini.
+
+See [fervor.ini](https://github.com/jangler/fervor/blob/master/fervor.ini) for
+an example configuration.
 
 Key bindings
 ------------
