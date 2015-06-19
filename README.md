@@ -14,7 +14,7 @@ even Notepad. Features include:
 - Quick startup and low memory footprint
 - Asynchronous shell command execution and selection filtering
 - Syntax highlighting (currently for: C, Go, Python, Bash, HTML, JSON, Make,
-  and INI)
+  Lua, and INI)
 
 Not included (yet):
 

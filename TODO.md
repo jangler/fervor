@@ -8,8 +8,6 @@ TODO
 	- JavaScript
 	- CSS
 	- SVG
-	- Lua
-- Skip re-highlight on SetSize, SetTabWidth?
 
 0.3.0
 -----

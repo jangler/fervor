@@ -23,6 +23,7 @@ var syntaxMap = map[string]func() []edit.Rule{
 	"[html]":   htmlRules,
 	"[ini]":    iniRules,
 	"[json]":   jsonRules,
+	"[lua]":    luaRules,
 	"[make]":   makefileRules,
 	"[python]": pythonRules,
 }
@@ -110,6 +111,14 @@ func htmlRules() []edit.Rule {
 	}
 }
 
+// iniRules returns syntax highlighting rules for INI files.
+func iniRules() []edit.Rule {
+	return []edit.Rule{
+		mustCompile(`(^| )[;#].*$`, commentId),
+		mustCompile(`^\[.*\]$`, keywordId),
+	}
+}
+
 // jsonRules returns syntax highlighting rules for JSON.
 func jsonRules() []edit.Rule {
 	return []edit.Rule{
@@ -120,11 +129,20 @@ func jsonRules() []edit.Rule {
 	}
 }
 
-// iniRules returns syntax highlighting rules for INI files.
-func iniRules() []edit.Rule {
+// luaRules returns syntax highlighting rules for Lua.
+func luaRules() []edit.Rule {
 	return []edit.Rule{
-		mustCompile(`(^| )[;#].*$`, commentId),
-		mustCompile(`^\[.*\]$`, keywordId),
+		mustCompile(`(^#!|--).*$`, commentId),
+		mustCompile(`\b(and|break|do|else|elseif|end|for|function|goto|`+
+			`if|in|local|not|or|repeat|return|then|until|while)\b`, keywordId),
+		mustCompile(`\b(assert|collectgarbage|dofile|error|_G|`+
+			`(get|set)metatable|ipairs|load(file)?|next|pairs|pcall|print|`+
+			`raw(equal|get|len|set)|select|to(number|string)|type|_VERSION|`+
+			`xpcall|require)\b`, keywordId),
+		mustCompile(`\b(false|nil|true)\b`, literalId),
+		mustCompile(`'(\\.|[^'])*?'|"(\\.|[^"])*?"`, literalId),
+		mustCompile(`\b(0[xX][0-9a-fA-F]+(\.[0-9a-fA-F]+)?|\d+(\.\d+)?)`+
+			`([EePp][+-]?\d+)?\b`, literalId),
 	}
 }
 
