@@ -222,8 +222,10 @@ func main() {
 	defer ttf.Quit()
 
 	// open new instances for other file args
-	for _, arg := range flag.Args()[1:] {
-		newInstance(arg, "")
+	if flag.NArg() > 1 {
+		for _, arg := range flag.Args()[1:] {
+			newInstance(arg, "")
+		}
 	}
 
 	// init buffer
