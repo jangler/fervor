@@ -132,12 +132,6 @@ func textInput(buf *edit.Buffer, s string) {
 		}
 		if i <= index.Char {
 			s += indent[:i]
-
-			// delete lines containing only whitespace
-			if i == len(indent) {
-				buf.Delete(edit.Index{index.Line, 0}, index)
-				index.Char = 0
-			}
 		}
 	}
 	buf.Insert(index, s)
@@ -202,17 +196,16 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 	histories := make(map[string]*history)
 
 	for {
+		// get current marks to see if they change based on the event
+		prevSel := rc.Pane.IndexFromMark(selMark)
+		prevIns := rc.Pane.IndexFromMark(insMark)
+
 		switch event := sdl.WaitEvent().(type) {
 		case *sdl.KeyDownEvent:
 			if rc.Focus == rc.Pane.Buffer {
 				rc.Status = rc.Pane.Title
 			}
 			recognized := true
-
-			// get current marks to see if they change based on the event
-			prevSel := rc.Pane.IndexFromMark(selMark)
-			prevIns := rc.Pane.IndexFromMark(insMark)
-
 			switch event.Keysym.Sym {
 			case sdl.K_BACKSPACE:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
@@ -681,6 +674,16 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 			case sdl.WINDOWEVENT_RESIZED:
 				resize(rc.Pane, int(event.Data1), int(event.Data2))
 				render(rc)
+			}
+		}
+
+		// delete lines containing only whitespace when moving cursor away
+		if prevIns.Line != rc.Pane.IndexFromMark(insMark).Line {
+			line := rc.Pane.Get(edit.Index{prevIns.Line, 0},
+				edit.Index{prevIns.Line, 1 << 30})
+			if len(strings.TrimSpace(line)) == 0 {
+				rc.Pane.Delete(edit.Index{prevIns.Line, 0},
+					edit.Index{prevIns.Line, 1 << 30})
 			}
 		}
 	}

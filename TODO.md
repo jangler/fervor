@@ -3,7 +3,6 @@ TODO
 
 0.2.0
 -----
-- Remove whitespace-only lines on any cursor movement
 - More syntax highlighting rules
 	- Ruby
 	- JavaScript
