@@ -29,6 +29,7 @@ var syntaxMap = map[string]func() []edit.Rule{
 	"[make]":       makefileRules,
 	"[python]":     pythonRules,
 	"[ruby]":       rubyRules,
+	"[svg]":        svgRules,
 }
 
 // bashRules returns syntax highlighting rules for Bash.
@@ -255,5 +256,24 @@ func rubyRules() []edit.Rule {
 		// missing: regexp literals, because of confusion with division
 		// missing: recognition of string interpolation: #{...}
 		// should symbols be highlighted as literals?
+	}
+}
+
+// svgRules returns syntax highlighting rules for SVG.
+func svgRules() []edit.Rule {
+	return []edit.Rule{
+		mustCompile(`<!--.*-->`, commentId),
+		mustCompile(`\b(a|altGlyph(Def|Item)?|animate(Motion|Transform)?|`+
+			`circle|clipPath|color-profile|cursor|defs|desc|ellipse|`+
+			`fe(Blend|(Color|Convolve)Matrix|ComponentTransfer|Composite|`+
+			`(Diffuse|Specular)Lighting|DisplacementMap|`+
+			`(Distant|Point|Spot)Light|Flood|Func[ABGR]|GaussianBlur|Image`+
+			`|Merge(Node)?|Morphology|Offset|Tile|Turbulence)|filter|`+
+			`font(-face(-format|-name|-src|-uri)?)?|foreignObject|g|`+
+			`glyph(Ref)?|hkern|image|line(arGradient)?|marker|mask|metadata|`+
+			`missing-glyph|m?path|pattern|poly(gon|line)|radialGradient|rect|`+
+			`script|set|stop|style|svg|switch|symbol|text(Path)?|title|tref|`+
+			`tspan|use|view|vkern)\b`, keywordId),
+		mustCompile(`'(\\.|[^'])*?'|"(\\.|[^"])*?"`, literalId),
 	}
 }

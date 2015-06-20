@@ -3,8 +3,7 @@ TODO
 
 0.2.0
 -----
-- More syntax highlighting rules
-	- SVG
+Ready to release!
 
 0.3.0
 -----
