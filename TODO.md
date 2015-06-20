@@ -1,10 +1,6 @@
 TODO
 ====
 
-0.2.0
------
-Ready to release!
-
 0.3.0
 -----
 - Indent/unindent selection using tab/shift-tab
