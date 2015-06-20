@@ -28,6 +28,7 @@ var syntaxMap = map[string]func() []edit.Rule{
 	"[lua]":        luaRules,
 	"[make]":       makefileRules,
 	"[python]":     pythonRules,
+	"[ruby]":       rubyRules,
 }
 
 // bashRules returns syntax highlighting rules for Bash.
@@ -221,5 +222,38 @@ func pythonRules() []edit.Rule {
 		mustCompile(`\b0[xX][0-9a-fA-F]+\b`, literalId),
 		mustCompile(`\b(\d+\.\d*|\d*\.\d+|\d+)([eE][+-]?\d+)?`+
 			`([jJ](\d+\.\d*|\d*\.\d+|\d+)([eE][+-]?\d+)?)?\b`, literalId),
+	}
+}
+
+// rubyRules returns syntax highlighting rules for Ruby.
+func rubyRules() []edit.Rule {
+	return []edit.Rule{
+		mustCompile(`#.*$`, commentId),
+		mustCompile(`/\*.*?\*/`, commentId), // does anyone actually use these?
+		mustCompile(`\b(__ENCODING__|__LINE__|__FILE__|BEGIN|END|alias|and|`+
+			`begin|break|case|class|def|defined\?|do|else|elsif|end|ensure|`+
+			`for|if|in|module|next|not|or|redo|rescue|retry|return|self|`+
+			`super|then|undef|unless|until|when|while|yield)\b`, keywordId),
+		mustCompile(`\b(__callee__|__dir__|__method__|abort|at_exit|`+
+			`autoload\??|binding|block_given\?|callcc|caller(_locations)?|`+
+			`catch|chomp|chop|eval|exec|exit|fail|fork|format|gets|`+
+			`(global|local)_variables|g?sub|iterator\?|lambda|load|loop|open|`+
+			`p|print|s?printf|proc|put[cs]|raise|s?rand|readlines?|`+
+			`require(_relative)?|select|set_trace_func|sleep|spawn|`+
+			`sys(call|tem)|test|throw|(un)?trace_var|trap|warn)\b`, keywordId),
+		mustCompile(`\b(false|nil|true)\b`, literalId),
+		mustCompile(`\b0[bB][01_]+\b`, literalId),
+		mustCompile(`\b0[oO]?[0-7_]+\b`, literalId),
+		mustCompile(`\b0[dD][0-9_]+\b`, literalId),
+		mustCompile(`\b0[xX][0-9a-fA-F_]+\b`, literalId),
+		mustCompile(`\b([0-9][0-9_]*\.([0-9][0-9_]*)?|`+
+			`([0-9][0-9_]*)?\.[0-9][0-9_]*|[[0-9][0-9_]*)`+
+			`([Ee][+-]?[0-9][0-9_]*)?\b`, literalId),
+		mustCompile(`'(\\.|[^'])*?'|"(\\.|[^"])*?"`, literalId),
+		mustCompile("`(\\.|[^`])*?`", literalId),
+		mustCompile(`%[iIqQrRsSwWxX](\(.*?\)|\{.*?\})`, literalId),
+		// missing: regexp literals, because of confusion with division
+		// missing: recognition of string interpolation: #{...}
+		// should symbols be highlighted as literals?
 	}
 }

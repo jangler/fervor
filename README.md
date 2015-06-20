@@ -13,8 +13,8 @@ even Notepad. Features include:
 - No GUI toolkit dependencies
 - Quick startup and low memory footprint
 - Asynchronous shell command execution and selection filtering
-- Syntax highlighting (currently for: Bash, C, CSS, Go, HTML, INI, JavaScript,
-  JSON, Lua, Make, Python, and INI)
+- Basic syntax highlighting (currently for: Bash, C, CSS, Go, HTML, INI,
+  JavaScript, JSON, Lua, Make, Python, and Ruby)
 
 Not included (yet):
 
@@ -25,8 +25,6 @@ Not included (ever):
 - Tabs or panes. Use a good window manager instead!
 
 See also: [TODO.md](https://github.com/jangler/fervor/blob/master/TODO.md).
-
-This project is in alpha status--use at your own risk!
 
 Installation
 ------------

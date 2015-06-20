@@ -4,7 +4,6 @@ TODO
 0.2.0
 -----
 - More syntax highlighting rules
-	- Ruby
 	- SVG
 
 0.3.0
