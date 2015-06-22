@@ -242,6 +242,7 @@ func main() {
 	} else {
 		status = fmt.Sprintf(`New file: "%s".`, minPath(arg))
 		buf = edit.NewBuffer()
+		buf.SetSyntax(setFileFlags(arg, ""))
 	}
 	pane := &Pane{buf, minPath(arg), tabstopFlag, 80, 25, lineEnding(buf)}
 	if pane.LineEnding == "\r\n" {
