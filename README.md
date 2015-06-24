@@ -64,6 +64,7 @@ Key bindings
 	Ctrl+Shift+F     Find regexp backward...
 	Ctrl+G           Go to line...
 	Ctrl+H           Delete character backward
+	Ctrl+I           Insert tab
 	Ctrl+L           Toggle Unix/DOS line endings
 	Ctrl+N           Next match
 	Ctrl+Shift+N     Previous match
@@ -82,8 +83,8 @@ Key bindings
 	Ctrl+X           Cut
 	Ctrl+Y           Redo
 	Ctrl+Z           Undo
-	Tab              Indent selection (in buffer), complete word (in prompt)
-	Shift+Tab        Unindent selection
+	Tab              Indent selection, complete word (searching backward)
+	Shift+Tab        Unindent selection, complete word (searching forward)
 
 Holding Shift makes a cursor motion select text from the previous cursor
 position to the resulting position. Enter, Backspace, Delete, Home, End, PgUp,

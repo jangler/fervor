@@ -4,10 +4,15 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strings"
 	"unicode/utf8"
+
+	"github.com/jangler/edit"
 )
+
+var nonWordRegexp = regexp.MustCompile(`\W`)
 
 var pathSep string // separates entries in PATH environment variable
 
@@ -64,7 +69,7 @@ func completeCmd(cmd string) string {
 	return prefix
 }
 
-// completePath comples the typed path to the longest common prefix of paths
+// completePath completes the typed path to the longest common prefix of paths
 // in the directory.
 func completePath(path string, dirsOnly bool) string {
 	// read filenames from dir
@@ -109,6 +114,48 @@ func completePath(path string, dirsOnly bool) string {
 		return minPath(path) + "/"
 	}
 	return minPath(path)
+}
+
+// completeWord completes the typed word to the first match in the buffer.
+func completeWord(b *edit.Buffer, prefix string, forward bool) string {
+	endLine := b.End().Line
+	startLine := b.IndexFromMark(insMark).Line
+	line := startLine
+	for {
+		// search for completion in line
+		s := b.Get(edit.Index{line, 0}, edit.Index{line, 1 << 30})
+		words := nonWordRegexp.Split(s, -1)
+		if forward {
+			for _, word := range words {
+				if strings.HasPrefix(word, prefix) && word != prefix {
+					return word
+				}
+			}
+		} else {
+			for i := len(words) - 1; i >= 0; i-- {
+				if strings.HasPrefix(words[i], prefix) && words[i] != prefix {
+					return words[i]
+				}
+			}
+		}
+
+		// go to next line
+		if forward {
+			line += 1
+			if line > endLine {
+				line = 0
+			}
+		} else {
+			line -= 1
+			if line < 1 {
+				line = endLine
+			}
+		}
+		if line == startLine { // search failed
+			break
+		}
+	}
+	return ""
 }
 
 // expandVars returns a version of path with environment variables and ~/

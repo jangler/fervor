@@ -352,14 +352,33 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 					sel := rc.Pane.IndexFromMark(selMark)
 					ins := rc.Pane.IndexFromMark(insMark)
 					if sel == ins {
-						if expandtabFlag {
-							for i := 0; i < int(tabstopFlag); i++ {
-								textInput(rc.Focus, " ")
+						char := rc.Pane.Buffer.Get(
+							edit.Index{ins.Line, ins.Char - 1}, ins)
+						if char == "" || char == " " || char == "\t" {
+							// insert tab
+							if expandtabFlag {
+								for i := 0; i < int(tabstopFlag); i++ {
+									textInput(rc.Focus, " ")
+								}
+							} else {
+								textInput(rc.Focus, "\t")
 							}
 						} else {
-							textInput(rc.Focus, "\t")
+							// complete word
+							selectWord(rc.Focus, ins)
+							word := getSelection(rc.Focus)
+							forward := event.Keysym.Mod&sdl.KMOD_SHIFT != 0
+							completion := completeWord(rc.Focus, word, forward)
+							if completion != "" {
+								textInput(rc.Focus, completion)
+							} else {
+								rc.Status = "No completions."
+							}
+							rc.Focus.Mark(rc.Focus.IndexFromMark(insMark),
+								selMark)
 						}
 					} else {
+						// indent/unindent selection
 						sel, ins := order(sel, ins)
 						unindent := event.Keysym.Mod&sdl.KMOD_SHIFT != 0
 						indent(rc.Pane.Buffer, sel.Line, ins.Line, unindent)
@@ -460,6 +479,10 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
 					index := rc.Focus.IndexFromMark(insMark)
 					deleteCharOrTab(rc.Focus, index, -1)
+				}
+			case sdl.K_i:
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+					textInput(rc.Focus, "\t")
 				}
 			case sdl.K_l:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 &&
