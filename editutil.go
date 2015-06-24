@@ -50,6 +50,33 @@ func getSelection(b *edit.Buffer) string {
 	return b.Get(order(b.IndexFromMark(selMark), b.IndexFromMark(insMark)))
 }
 
+// indent changes the indentation of the given lines in the buffer.
+func indent(b *edit.Buffer, startLine, endLine int, unindent bool) {
+	for line := startLine; line <= endLine; line++ {
+		if expandtabFlag {
+			for i := 0; i < int(tabstopFlag); i++ {
+				char := b.Get(edit.Index{line, 0}, edit.Index{line, 1})
+				if unindent {
+					if char == " " {
+						b.Delete(edit.Index{line, 0}, edit.Index{line, 1})
+					}
+				} else if char != "" { // don't indent blank lines
+					b.Insert(edit.Index{line, 0}, " ")
+				}
+			}
+		} else {
+			char := b.Get(edit.Index{line, 0}, edit.Index{line, 1})
+			if unindent {
+				if char == "\t" {
+					b.Delete(edit.Index{line, 0}, edit.Index{line, 1})
+				}
+			} else if char != "" { // don't indent blank lines
+				b.Insert(edit.Index{line, 0}, "\t")
+			}
+		}
+	}
+}
+
 // order returns index1 and index2 in buffer order.
 func order(index1, index2 edit.Index) (first, second edit.Index) {
 	if index1.Less(index2) {

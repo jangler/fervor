@@ -349,12 +349,20 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 				}
 			case sdl.K_TAB:
 				if rc.Focus == rc.Pane.Buffer {
-					if expandtabFlag {
-						for i := 0; i < int(tabstopFlag); i++ {
-							textInput(rc.Focus, " ")
+					sel := rc.Pane.IndexFromMark(selMark)
+					ins := rc.Pane.IndexFromMark(insMark)
+					if sel == ins {
+						if expandtabFlag {
+							for i := 0; i < int(tabstopFlag); i++ {
+								textInput(rc.Focus, " ")
+							}
+						} else {
+							textInput(rc.Focus, "\t")
 						}
 					} else {
-						textInput(rc.Focus, "\t")
+						sel, ins := order(sel, ins)
+						unindent := event.Keysym.Mod&sdl.KMOD_SHIFT != 0
+						indent(rc.Pane.Buffer, sel.Line, ins.Line, unindent)
 					}
 				} else {
 					input := rc.Input.Get(edit.Index{1, 0}, rc.Input.End())

@@ -82,7 +82,8 @@ Key bindings
 	Ctrl+X           Cut
 	Ctrl+Y           Redo
 	Ctrl+Z           Undo
-	Tab (in prompt)  Complete command name or file path
+	Tab              Indent selection (in buffer), complete word (in prompt)
+	Shift+Tab        Unindent selection
 
 Holding Shift makes a cursor motion select text from the previous cursor
 position to the resulting position. Enter, Backspace, Delete, Home, End, PgUp,
