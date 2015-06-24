@@ -42,6 +42,7 @@ Usage
 	Usage: fervor [<option> ...] [<file> ...]
 
 	Options:
+	  -dark=false: use dark color scheme
 	  -expandtab=false: insert spaces using the Tab key
 	  -font="": use the TTF at the given path
 	  -ptsize=12: set point size of font

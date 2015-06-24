@@ -25,6 +25,7 @@ const (
 )
 
 var (
+	darkFlag      = false
 	expandtabFlag = false
 	fontFlag      = ""
 	ptsizeFlag    = 12
@@ -143,6 +144,7 @@ func initFlags() {
 Global and file-specific default options can be specified in either
 ~/fervor.ini or ~/.config/fervor.ini.`)
 	}
+	flag.BoolVar(&darkFlag, "dark", darkFlag, "use dark color scheme")
 	flag.BoolVar(&expandtabFlag, "expandtab", expandtabFlag,
 		"insert spaces using the Tab key")
 	flag.StringVar(&fontFlag, "font", fontFlag,
@@ -166,6 +168,7 @@ func parseFlags() {
 	}
 
 	sectionFlags[""] = map[string]string{
+		"dark":      fmt.Sprintf("%v", darkFlag),
 		"expandtab": fmt.Sprintf("%v", expandtabFlag),
 		"font":      fmt.Sprintf("%v", fontFlag),
 		"ptsize":    fmt.Sprintf("%v", ptsizeFlag),
@@ -211,6 +214,7 @@ func main() {
 	initFlags()
 	readIni()
 	parseFlags()
+	setColorScheme()
 
 	// init SDL
 	runtime.LockOSThread()

@@ -16,13 +16,41 @@ import (
 const padPx = 2 // number of pixels used to pad UI elements
 
 var (
-	bgColor       = sdl.Color{0xff, 0xff, 0xff, 0xff}
-	fgColor       = sdl.Color{0x2f, 0x2f, 0x2f, 0xff}
-	statusBgColor = sdl.Color{0xe8, 0xe8, 0xe8, 0xff}
-	commentColor  = sdl.Color{0x3f, 0x5a, 0x8d, 0xff}
-	keywordColor  = sdl.Color{0x3a, 0x63, 0x41, 0xff}
-	literalColor  = sdl.Color{0x8e, 0x4a, 0x43, 0xff}
+	lightBgColor      = sdl.Color{0xff, 0xff, 0xff, 0xff}
+	lightFgColor      = sdl.Color{0x2f, 0x2f, 0x2f, 0xff}
+	lightStatusColor  = sdl.Color{0xe8, 0xe8, 0xe8, 0xff}
+	lightCommentColor = sdl.Color{0x3f, 0x5a, 0x8d, 0xff}
+	lightKeywordColor = sdl.Color{0x3a, 0x63, 0x41, 0xff}
+	lightLiteralColor = sdl.Color{0x8e, 0x4a, 0x43, 0xff}
+
+	darkBgColor      = sdl.Color{0x25, 0x25, 0x25, 0xff}
+	darkFgColor      = sdl.Color{0xe2, 0xe2, 0xe2, 0xff}
+	darkStatusColor  = sdl.Color{0x40, 0x40, 0x40, 0xff}
+	darkCommentColor = sdl.Color{0xa0, 0xb6, 0xdf, 0xff}
+	darkKeywordColor = sdl.Color{0x99, 0xbe, 0x9f, 0xff}
+	darkLiteralColor = sdl.Color{0xda, 0xaa, 0xa5, 0xff}
+
+	bgColor, fgColor, statusColor            sdl.Color
+	commentColor, keywordColor, literalColor sdl.Color
 )
+
+func setColorScheme() {
+	if darkFlag {
+		bgColor = darkBgColor
+		fgColor = darkFgColor
+		statusColor = darkStatusColor
+		commentColor = darkCommentColor
+		keywordColor = darkKeywordColor
+		literalColor = darkLiteralColor
+	} else {
+		bgColor = lightBgColor
+		fgColor = lightFgColor
+		statusColor = lightStatusColor
+		commentColor = lightCommentColor
+		keywordColor = lightKeywordColor
+		literalColor = lightLiteralColor
+	}
+}
 
 var fontHeight, fontWidth int
 
@@ -153,7 +181,7 @@ func drawBuffer(b *edit.Buffer, font *ttf.Font, dst *sdl.Surface,
 
 				drawString(font, string(pre), fg, bgColor, dst, x, y)
 				x += len(pre) * fontWidth
-				drawString(font, string(mid), fg, statusBgColor, dst, x, y)
+				drawString(font, string(mid), fg, statusColor, dst, x, y)
 				x += len(mid) * fontWidth
 				drawString(font, string(post), fg, bgColor, dst, x, y)
 				x += len(post) * fontWidth
@@ -211,17 +239,17 @@ func drawStatusLine(dst *sdl.Surface, font *ttf.Font, s string,
 		dst.W,
 		int32(fontHeight) + padPx*2,
 	}
-	dst.FillRect(&bgRect, statusBgColor.Uint32())
+	dst.FillRect(&bgRect, statusColor.Uint32())
 
 	// draw status text
 	x, y := padPx, int(dst.H)-fontHeight-padPx
-	drawString(font, s, fgColor, statusBgColor, dst, x, y)
+	drawString(font, s, fgColor, statusColor, dst, x, y)
 	x += utf8.RuneCountInString(s) * fontWidth
 
 	if focused {
 		// draw input text and cursor
 		drawString(font, input.Get(edit.Index{1, 0}, input.End()), fgColor,
-			statusBgColor, dst, x, y)
+			statusColor, dst, x, y)
 		index := input.IndexFromMark(insMark)
 		dst.FillRect(&sdl.Rect{int32(x + fontWidth*index.Char), int32(y),
 			1 + int32(ptsizeFlag)/18, int32(fontHeight)}, fgColor.Uint32())
@@ -241,7 +269,7 @@ func drawStatusLine(dst *sdl.Surface, font *ttf.Font, s string,
 		if col != index.Char {
 			cursorPos += fmt.Sprintf("-%d", col)
 		}
-		drawString(font, cursorPos, fgColor, statusBgColor, dst,
+		drawString(font, cursorPos, fgColor, statusColor, dst,
 			int(dst.W)-padPx-fontWidth*17, int(dst.H)-fontHeight-padPx)
 
 		// draw scroll percent
@@ -250,7 +278,7 @@ func drawStatusLine(dst *sdl.Surface, font *ttf.Font, s string,
 		if f < 0 {
 			scrollStr = "All"
 		}
-		drawString(font, scrollStr, fgColor, statusBgColor, dst,
+		drawString(font, scrollStr, fgColor, statusColor, dst,
 			int(dst.W)-padPx-fontWidth*4, int(dst.H)-fontHeight-padPx)
 	}
 }

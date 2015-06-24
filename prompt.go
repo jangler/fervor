@@ -33,6 +33,9 @@ func (rc *RenderContext) UpdateFlags() {
 	if fontFlag != prevFontFlag || ptsizeFlag != prevPtsizeFlag {
 		rc.Font = getFont()
 	}
+	if darkFlag != (bgColor == darkBgColor) {
+		setColorScheme()
+	}
 	rc.Pane.SetSyntax(syntaxRules)
 	rc.Pane.TabWidth = tabstopFlag
 	rc.Pane.SetTabWidth(tabstopFlag)
