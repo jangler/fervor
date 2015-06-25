@@ -148,7 +148,7 @@ Global and file-specific default options can be specified in either
 	flag.BoolVar(&expandtabFlag, "expandtab", expandtabFlag,
 		"insert spaces using the Tab key")
 	flag.StringVar(&fontFlag, "font", fontFlag,
-		"use the TTF at the given path")
+		"use the font at the given path")
 	flag.IntVar(&ptsizeFlag, "ptsize", ptsizeFlag, "set point size of font")
 	flag.IntVar(&tabstopFlag, "tabstop", tabstopFlag,
 		"set width of tab stops, in columns")
