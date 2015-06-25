@@ -1,7 +1,7 @@
 Fervor
 ======
 
-![screenshot](http://jangler.info/dl/fervor-screenshot.png 'screenshot')
+![screenshot](http://jangler.info/dl/fervor-screenshot-0.3.0.png 'screenshot')
 
 A graphical, modeless, cross-platform text editor influenced by Acme, vi, and
 even Notepad. Features include:
