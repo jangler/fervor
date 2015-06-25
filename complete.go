@@ -5,7 +5,6 @@ import (
 	"os/user"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"strings"
 	"unicode/utf8"
 
@@ -13,16 +12,6 @@ import (
 )
 
 var nonWordRegexp = regexp.MustCompile(`\W`)
-
-var pathSep string // separates entries in PATH environment variable
-
-func init() {
-	if runtime.GOOS == "windows" {
-		pathSep = ";"
-	} else {
-		pathSep = ":"
-	}
-}
 
 // commonPrefix returns the longest common prefix of two strings.
 func commonPrefix(a, b string) string {
@@ -42,7 +31,7 @@ func commonPrefix(a, b string) string {
 // completeCmd completes the typed command name to the longest common prefix of
 // matches in $PATH.
 func completeCmd(cmd string) string {
-	paths := strings.Split(os.Getenv("PATH"), pathSep)
+	paths := strings.Split(os.Getenv("PATH"), string(os.PathListSeparator))
 	var prefix string
 	for _, path := range paths {
 		if f, err := os.Open(path); err == nil {
