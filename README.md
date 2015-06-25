@@ -66,6 +66,7 @@ Key bindings
 	Ctrl+G           Go to line...
 	Ctrl+H           Delete character backward
 	Ctrl+I           Insert tab
+	Ctrl+K           Keyword lookup
 	Ctrl+L           Toggle Unix/DOS line endings
 	Ctrl+N           Next match
 	Ctrl+Shift+N     Previous match

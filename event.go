@@ -484,6 +484,11 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
 					textInput(rc.Focus, "\t")
 				}
+			case sdl.K_k:
+				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 &&
+					rc.Focus != rc.Input {
+					rc.Status = keywordLookup(rc.Focus, pane.Title)
+				}
 			case sdl.K_l:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 &&
 					rc.Focus != rc.Input {
