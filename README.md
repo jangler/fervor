@@ -16,12 +16,9 @@ even Notepad. Features include:
 - Basic syntax highlighting (currently for: Bash, C, CSS, Go, HTML, INI,
   JavaScript, JSON, Lua, Make, Python, Ruby, and SVG)
 
-Not included (yet):
+Not included:
 
-- A scrollbar
-
-Not included (ever):
-
+- A scrollbar.
 - Tabs or panes. Use a good window manager instead!
 
 See also: [TODO.md](https://github.com/jangler/fervor/blob/master/TODO.md).
@@ -44,7 +41,8 @@ Usage
 	Options:
 	  -dark=false: use dark color scheme
 	  -expandtab=false: insert spaces using the Tab key
-	  -font="": use the TTF at the given path
+	  -font="": use the font at the given path
+	  -kwprog="": program to use for keyword lookup
 	  -ptsize=12: set point size of font
 	  -tabstop=8: set width of tab stops, in columns
 	  -version=false: print version information and exit
