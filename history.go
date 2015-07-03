@@ -47,11 +47,10 @@ func (h *history) next() string {
 	}
 	if h.current == nil {
 		return ""
-	} else {
-		h.current = h.current.Next()
-		if h.current == nil {
-			return ""
-		}
+	}
+	h.current = h.current.Next()
+	if h.current == nil {
+		return ""
 	}
 	if h.current != nil {
 		return h.current.Value.(string)

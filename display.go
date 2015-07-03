@@ -150,11 +150,11 @@ func drawBuffer(b *edit.Buffer, font *ttf.Font, dst *sdl.Surface,
 			text := e.Value.(edit.Fragment).Text
 			fg := fgColor
 			switch e.Value.(edit.Fragment).Tag {
-			case commentId:
+			case commentID:
 				fg = commentColor
-			case keywordId:
+			case keywordID:
 				fg = keywordColor
-			case literalId:
+			case literalID:
 				fg = literalColor
 			}
 

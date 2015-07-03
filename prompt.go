@@ -122,15 +122,13 @@ func (rc *RenderContext) EnterInput() bool {
 		if input == "y" || input == "yes" {
 			rc.Prompt(openPrompt)
 			return true // so that main buffer isn't focused
-		} else {
-			rc.Status = rc.Pane.Title
 		}
+		rc.Status = rc.Pane.Title
 	case reallyQuitPrompt:
 		if input == "y" || input == "yes" {
 			return false
-		} else {
-			rc.Status = rc.Pane.Title
 		}
+		rc.Status = rc.Pane.Title
 	case runPrompt:
 		rc.Status = rc.Pane.Title
 		if input == "" {

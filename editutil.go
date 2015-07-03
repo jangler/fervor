@@ -121,11 +121,11 @@ func selectWord(b *edit.Buffer, index edit.Index) {
 	selIndex, insIndex := index, index
 	for wordRegexp.MatchString(b.Get(
 		edit.Index{selIndex.Line, selIndex.Char - 1}, selIndex)) {
-		selIndex.Char -= 1
+		selIndex.Char--
 	}
 	for wordRegexp.MatchString(b.Get(
 		insIndex, edit.Index{insIndex.Line, insIndex.Char + 1})) {
-		insIndex.Char += 1
+		insIndex.Char++
 	}
 	b.Mark(selIndex, selMark)
 	b.Mark(insIndex, insMark)

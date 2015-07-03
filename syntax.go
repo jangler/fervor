@@ -11,9 +11,9 @@ func mustCompile(pattern string, id int) edit.Rule {
 }
 
 const (
-	commentId = iota
-	keywordId
-	literalId
+	commentID = iota
+	keywordID
+	literalID
 )
 
 var syntaxMap = map[string]func() []edit.Rule{
@@ -39,7 +39,7 @@ func bashRules() []edit.Rule {
 	// other things are usually highlighted.
 	return []edit.Rule{
 		mustCompile(`\$#`, -1),
-		mustCompile(`#.*$`, commentId),
+		mustCompile(`#.*$`, commentID),
 		mustCompile(`[!:.]| \[\[? | \]\]?|\b(alias|bg|bind|break|builtin|`+
 			`caller|case|cd|command|compgen|complete|compopt|continue|`+
 			`declare|dirs|disown|do|done|echo|elif|else|enable|esac|eval|`+
@@ -47,9 +47,9 @@ func bashRules() []edit.Rule {
 			`history|if|in|jobs|kill|let|local|logout|mapfile|popd|printf|`+
 			`pushd|pwd|read|readarray|readonly|return|select|set|shift|shopt|`+
 			`source|suspend|test|then|time|times|trap|true|type|typeset|`+
-			`ulimit|umask|unalias|unset|until|wait|while)\b`, keywordId),
-		mustCompile(`\$?("(\\.|[^"])*?"|'(\\.|[^'])*?')`, literalId),
-		mustCompile("`(\\.|[^`])*?`", literalId),
+			`ulimit|umask|unalias|unset|until|wait|while)\b`, keywordID),
+		mustCompile(`\$?("(\\.|[^"])*?"|'(\\.|[^'])*?')`, literalID),
+		mustCompile("`(\\.|[^`])*?`", literalID),
 	}
 }
 
@@ -57,59 +57,59 @@ func bashRules() []edit.Rule {
 func cRules() []edit.Rule {
 	return []edit.Rule{
 		mustCompile(`^#(define|undef|include|if|elif|else|endif|ifdef|ifndef|`+
-			`line|pragma).*$`, commentId),
-		mustCompile(`//.+?$`, commentId),
-		mustCompile(`/\*.*?\*/`, commentId),
+			`line|pragma).*$`, commentID),
+		mustCompile(`//.+?$`, commentID),
+		mustCompile(`/\*.*?\*/`, commentID),
 		mustCompile(`\b(auto|break|case|char|const|continue|default|do|`+
 			`double|else|enum|extern|float|for|goto|if|inline|int|long|`+
 			`register|restrict|return|short|signed|sizeof|static|struct|`+
 			`switch|typedef|union|unsigned|void|volatile|while|_Bool|`+
-			`_Complex|_Imaginary)\b`, keywordId),
-		mustCompile(`\b(bool|true|false|NULL)\b`, literalId),
-		mustCompile(`L?'(\\.|[^'])*?'|"(\\.|[^"])*?"`, literalId),
+			`_Complex|_Imaginary)\b`, keywordID),
+		mustCompile(`\b(bool|true|false|NULL)\b`, literalID),
+		mustCompile(`L?'(\\.|[^'])*?'|"(\\.|[^"])*?"`, literalID),
 		mustCompile(`\b(\d+\.\d*|\d*\.\d+|\d+)([eEpP][+-]?\d+)?`+
-			`[fFlL]?\b`, literalId),
+			`[fFlL]?\b`, literalID),
 		mustCompile(`\b(0([bB][01]+|[0-7]+|[xX][0-9a-fA-F]+)|\d+)`+
-			`([uU]?[lL]?|[lL]?[uU]?)\b`, literalId),
+			`([uU]?[lL]?|[lL]?[uU]?)\b`, literalID),
 	}
 }
 
 // cssRules returns syntax highlighting rules for CSS.
 func cssRules() []edit.Rule {
 	return []edit.Rule{
-		mustCompile(`/\*.*?\*/`, commentId),
-		mustCompile(`^\S*[^:] `, keywordId),
-		mustCompile(`\S+;`, literalId),
+		mustCompile(`/\*.*?\*/`, commentID),
+		mustCompile(`^\S*[^:] `, keywordID),
+		mustCompile(`\S+;`, literalID),
 	}
 }
 
 // goRules returns syntax highlighting rules for Go.
 func goRules() []edit.Rule {
 	return []edit.Rule{
-		mustCompile(`//.+?$`, commentId),
-		mustCompile(`/\*.*?\*/`, commentId),
+		mustCompile(`//.+?$`, commentID),
+		mustCompile(`/\*.*?\*/`, commentID),
 		mustCompile(`\b(break|case|chan|const|continue|default|defer|else|`+
 			`fallthrough|for|func|go|goto|if|import|interface|map|package|`+
-			`range|return|select|struct|switch|type|var)\b`, keywordId),
+			`range|return|select|struct|switch|type|var)\b`, keywordID),
 		mustCompile(`\b(append|cap|close|complex|copy|delete|imag|len|make|`+
-			`new|panic|print|println|real|recover)\b`, keywordId),
+			`new|panic|print|println|real|recover)\b`, keywordID),
 		mustCompile(`\b(bool|byte|complex(64|128)|error|float(32|64)|`+
-			`u?int(8|16|32|64)?|rune|string|uintptr)\b`, keywordId),
-		mustCompile(`\b(true|false|iota|nil)\b`, literalId),
-		mustCompile(`'(\\.|[^'])*?'|"(\\.|[^"])*?"`, literalId),
-		mustCompile("`.*?`", literalId),
-		mustCompile(`\b0[bB][01]+\b`, literalId),
-		mustCompile(`\b0[0-7]+\b`, literalId),
-		mustCompile(`\b0[xX][0-9a-fA-F]+\b`, literalId),
-		mustCompile(`\b(\d+\.\d*|\d*\.\d+|\d+)([eE][+-]?\d+)?i?\b`, literalId),
-		mustCompile(`\b\d+\bi`, literalId),
+			`u?int(8|16|32|64)?|rune|string|uintptr)\b`, keywordID),
+		mustCompile(`\b(true|false|iota|nil)\b`, literalID),
+		mustCompile(`'(\\.|[^'])*?'|"(\\.|[^"])*?"`, literalID),
+		mustCompile("`.*?`", literalID),
+		mustCompile(`\b0[bB][01]+\b`, literalID),
+		mustCompile(`\b0[0-7]+\b`, literalID),
+		mustCompile(`\b0[xX][0-9a-fA-F]+\b`, literalID),
+		mustCompile(`\b(\d+\.\d*|\d*\.\d+|\d+)([eE][+-]?\d+)?i?\b`, literalID),
+		mustCompile(`\b\d+\bi`, literalID),
 	}
 }
 
 // htmlRules returns syntax highlighting rules for HTML.
 func htmlRules() []edit.Rule {
 	return []edit.Rule{
-		mustCompile(`<!(--.*--|DOCTYPE.*)>`, commentId),
+		mustCompile(`<!(--.*--|DOCTYPE.*)>`, commentID),
 		mustCompile(`\b(a|abbr|address|area|article|aside|audio|b|base|`+
 			`bd[io]|blockquote|body|br|button|canvas|caption|cite|code|`+
 			`col(group)?|datalist|dd|del|details|dfn|dialog|div|dl|dt|`+
@@ -119,31 +119,31 @@ func htmlRules() []edit.Rule {
 			`noscript|object|ol|opt(group|tion)|output|p|param|pre|progress|`+
 			`q|rp|rt|ruby|s|samp|script|section|select|small|source|span|`+
 			`strong|style|sub|summary|sup|table|tbody|td|textarea|tfoot|th|`+
-			`thead|time|title|tr|track|u|ul|var|video|wbr)\b`, keywordId),
-		mustCompile(`'(\\.|[^'])*?'|"(\\.|[^"])*?"`, literalId),
+			`thead|time|title|tr|track|u|ul|var|video|wbr)\b`, keywordID),
+		mustCompile(`'(\\.|[^'])*?'|"(\\.|[^"])*?"`, literalID),
 	}
 }
 
 // iniRules returns syntax highlighting rules for INI files.
 func iniRules() []edit.Rule {
 	return []edit.Rule{
-		mustCompile(`(^| )[;#].*$`, commentId),
-		mustCompile(`^\[.*\]$`, keywordId),
+		mustCompile(`(^| )[;#].*$`, commentID),
+		mustCompile(`^\[.*\]$`, keywordID),
 	}
 }
 
 // javaScriptRules returns syntax highlighting rules for JavaScript.
 func javaScriptRules() []edit.Rule {
 	return []edit.Rule{
-		mustCompile(`//.+?$`, commentId),
-		mustCompile(`/\*.*?\*/`, commentId),
+		mustCompile(`//.+?$`, commentID),
+		mustCompile(`/\*.*?\*/`, commentID),
 		mustCompile(`\b(break|case|catch|continue|debugger|default|delete|`+
 			`do|else|finally|for|function|if|in|instanceof|new|return|switch|`+
-			`this|throw|try|typeof|var|void|while|with)\b`, keywordId),
-		mustCompile(`\b(false|NaN|null|true|undefined)\b`, literalId),
-		mustCompile(`\b0[xX][0-9a-fA-F]+\b`, literalId),
-		mustCompile(`\b(\d+\.\d*|\d*\.\d+|\d+)([Ee][+-]?\d+)?\b`, literalId),
-		mustCompile(`'(\\.|[^'])*?'|"(\\.|[^"])*?"`, literalId),
+			`this|throw|try|typeof|var|void|while|with)\b`, keywordID),
+		mustCompile(`\b(false|NaN|null|true|undefined)\b`, literalID),
+		mustCompile(`\b0[xX][0-9a-fA-F]+\b`, literalID),
+		mustCompile(`\b(\d+\.\d*|\d*\.\d+|\d+)([Ee][+-]?\d+)?\b`, literalID),
+		mustCompile(`'(\\.|[^'])*?'|"(\\.|[^"])*?"`, literalID),
 		// missing: regexp literals, because of confusion with division
 	}
 }
@@ -151,62 +151,62 @@ func javaScriptRules() []edit.Rule {
 // jsonRules returns syntax highlighting rules for JSON.
 func jsonRules() []edit.Rule {
 	return []edit.Rule{
-		mustCompile(`"(\\.|[^"])*?":`, keywordId),
-		mustCompile(`"(\\.|[^"])*?"`, literalId),
-		mustCompile(`\b(true|false|null)\b`, literalId),
-		mustCompile(`\b(\d+\.\d*|\d*\.\d+|\d+)([Ee][+-]?\d+)?\b`, literalId),
+		mustCompile(`"(\\.|[^"])*?":`, keywordID),
+		mustCompile(`"(\\.|[^"])*?"`, literalID),
+		mustCompile(`\b(true|false|null)\b`, literalID),
+		mustCompile(`\b(\d+\.\d*|\d*\.\d+|\d+)([Ee][+-]?\d+)?\b`, literalID),
 	}
 }
 
 // luaRules returns syntax highlighting rules for Lua.
 func luaRules() []edit.Rule {
 	return []edit.Rule{
-		mustCompile(`(^#!|--).*$`, commentId),
+		mustCompile(`(^#!|--).*$`, commentID),
 		mustCompile(`\b(and|break|do|else|elseif|end|for|function|goto|`+
-			`if|in|local|not|or|repeat|return|then|until|while)\b`, keywordId),
+			`if|in|local|not|or|repeat|return|then|until|while)\b`, keywordID),
 		mustCompile(`\b(assert|collectgarbage|dofile|error|_G|`+
 			`(get|set)metatable|ipairs|load(file)?|next|pairs|pcall|print|`+
 			`raw(equal|get|len|set)|select|to(number|string)|type|_VERSION|`+
-			`xpcall|require)\b`, keywordId),
-		mustCompile(`\b(false|nil|true)\b`, literalId),
-		mustCompile(`'(\\.|[^'])*?'|"(\\.|[^"])*?"`, literalId),
+			`xpcall|require)\b`, keywordID),
+		mustCompile(`\b(false|nil|true)\b`, literalID),
+		mustCompile(`'(\\.|[^'])*?'|"(\\.|[^"])*?"`, literalID),
 		mustCompile(`\b(0[xX][0-9a-fA-F]+(\.[0-9a-fA-F]+)?|\d+(\.\d+)?)`+
-			`([EePp][+-]?\d+)?\b`, literalId),
+			`([EePp][+-]?\d+)?\b`, literalID),
 	}
 }
 
 // makefileRules returns syntax highlighting rules for makefiles.
 func makefileRules() []edit.Rule {
 	return []edit.Rule{
-		mustCompile(`#.*$`, commentId),
+		mustCompile(`#.*$`, commentID),
 		mustCompile(`\b(else|end[ei]f|ifn?def|ifn?eq|(-|s)?include|load|`+
-			`override|private|(un)?export|(un)?define|vpath)\b`, keywordId),
+			`override|private|(un)?export|(un)?define|vpath)\b`, keywordID),
 		mustCompile(`\b(abspath|addprefix|(add)?suffix|and|basename|call|`+
 			`error|eval|file|filter(-out)?|findstring|firstword|flavor|`+
 			`foreach|guile|if|info|join|lastword|(not)?dir|or(igin)?|`+
 			`patsubst|realpath|shell|sort|strip|subst|value|warning|wildcard|`+
-			`word(s|list)?)\b`, keywordId),
+			`word(s|list)?)\b`, keywordID),
 		mustCompile(`\b\.(DEFAULT|DELETE_ON_ERROR|EXPORT_ALL_VARIABLES|`+
 			`IGNORE|INTERMEDIATE|LOW_RESOLUTION_TIME|NOTPARALLEL|ONESHELL|`+
 			`PHONY|POSIX|PRECIOUS|SECONDARY|SECONDEXPANSION|SILENT|`+
-			`SUFFIXES)\b`, keywordId),
+			`SUFFIXES)\b`, keywordID),
 		mustCompile(`\b(DEFAULT_GOAL|\.FEATURES|\.INCLUDE_DIRS|MAKEFILE_LIST|`+
 			`MAKE_RESTARTS|MAKE_TERMERR|MAKE_TERMOUT|\.RECIPEPREFIX|`+
-			`\.VARIABLES)\b`, keywordId),
+			`\.VARIABLES)\b`, keywordID),
 		mustCompile(`\b(CURDIR|MAKE(CMDGOALS|FILES|FLAGS|_HOST|LEVEL|`+
 			`\.LIBPATTERNS|SHELL|SUFFIXES|_VERSION)?|SHELL|VPATH)\b`,
-			keywordId),
-		mustCompile(`\$(\(.+\)|\{.+\}|.)`, literalId),
+			keywordID),
+		mustCompile(`\$(\(.+\)|\{.+\}|.)`, literalID),
 	}
 }
 
 // pythonRules returns syntax highlighting rules for Python.
 func pythonRules() []edit.Rule {
 	return []edit.Rule{
-		mustCompile(`#.*$`, commentId),
+		mustCompile(`#.*$`, commentID),
 		mustCompile(`\b(and|as|assert|break|class|continue|def|del|elif|else|`+
 			`except|finally|for|from|global|if|import|in|is|lambda|nonlocal|`+
-			`not|or|pass|raise|return|try|while|with|yield)\b`, keywordId),
+			`not|or|pass|raise|return|try|while|with|yield)\b`, keywordID),
 		mustCompile(`\b(abs|all|any|ascii|bin|bool|bytearray|bytes|callable|`+
 			`chr|classmethod|compile|complex|delattr|dict|dir|divmod|`+
 			`enumerate|eval|exec|filter|float|format|frozenset|getattr|`+
@@ -214,45 +214,45 @@ func pythonRules() []edit.Rule {
 			`issubclass|iter|len|list|locals|map|max|memoryview|min|next|`+
 			`object|oct|open|ord|pow|print|property|range|repr|reversed|`+
 			`round|set|setattr|slice|sorted|staticmethod|str|sum|super|`+
-			`tuple|type|vars|zip|__import__)\b`, keywordId),
-		mustCompile(`\b(False|None|True)\b`, literalId),
+			`tuple|type|vars|zip|__import__)\b`, keywordID),
+		mustCompile(`\b(False|None|True)\b`, literalID),
 		mustCompile(`(\b([rR][bB]|[bB][rR]|\b[uUrR]))?('''(\\?.)*?'''|`+
-			`"""(\\?.)*?"""|"(\.|[^"])*?"|'(\.|[^'])*?')`, literalId),
-		mustCompile(`\b0[bB][01]+\b`, literalId),
-		mustCompile(`\b0[oO]?[0-7]+\b`, literalId),
-		mustCompile(`\b0[xX][0-9a-fA-F]+\b`, literalId),
+			`"""(\\?.)*?"""|"(\.|[^"])*?"|'(\.|[^'])*?')`, literalID),
+		mustCompile(`\b0[bB][01]+\b`, literalID),
+		mustCompile(`\b0[oO]?[0-7]+\b`, literalID),
+		mustCompile(`\b0[xX][0-9a-fA-F]+\b`, literalID),
 		mustCompile(`\b(\d+\.\d*|\d*\.\d+|\d+)([eE][+-]?\d+)?`+
-			`([jJ](\d+\.\d*|\d*\.\d+|\d+)([eE][+-]?\d+)?)?\b`, literalId),
+			`([jJ](\d+\.\d*|\d*\.\d+|\d+)([eE][+-]?\d+)?)?\b`, literalID),
 	}
 }
 
 // rubyRules returns syntax highlighting rules for Ruby.
 func rubyRules() []edit.Rule {
 	return []edit.Rule{
-		mustCompile(`#.*$`, commentId),
-		mustCompile(`/\*.*?\*/`, commentId), // does anyone actually use these?
+		mustCompile(`#.*$`, commentID),
+		mustCompile(`/\*.*?\*/`, commentID), // does anyone actually use these?
 		mustCompile(`\b(__ENCODING__|__LINE__|__FILE__|BEGIN|END|alias|and|`+
 			`begin|break|case|class|def|defined\?|do|else|elsif|end|ensure|`+
 			`for|if|in|module|next|not|or|redo|rescue|retry|return|self|`+
-			`super|then|undef|unless|until|when|while|yield)\b`, keywordId),
+			`super|then|undef|unless|until|when|while|yield)\b`, keywordID),
 		mustCompile(`\b(__callee__|__dir__|__method__|abort|at_exit|`+
 			`autoload\??|binding|block_given\?|callcc|caller(_locations)?|`+
 			`catch|chomp|chop|eval|exec|exit|fail|fork|format|gets|`+
 			`(global|local)_variables|g?sub|iterator\?|lambda|load|loop|open|`+
 			`p|print|s?printf|proc|put[cs]|raise|s?rand|readlines?|`+
 			`require(_relative)?|select|set_trace_func|sleep|spawn|`+
-			`sys(call|tem)|test|throw|(un)?trace_var|trap|warn)\b`, keywordId),
-		mustCompile(`\b(false|nil|true)\b`, literalId),
-		mustCompile(`\b0[bB][01_]+\b`, literalId),
-		mustCompile(`\b0[oO]?[0-7_]+\b`, literalId),
-		mustCompile(`\b0[dD][0-9_]+\b`, literalId),
-		mustCompile(`\b0[xX][0-9a-fA-F_]+\b`, literalId),
+			`sys(call|tem)|test|throw|(un)?trace_var|trap|warn)\b`, keywordID),
+		mustCompile(`\b(false|nil|true)\b`, literalID),
+		mustCompile(`\b0[bB][01_]+\b`, literalID),
+		mustCompile(`\b0[oO]?[0-7_]+\b`, literalID),
+		mustCompile(`\b0[dD][0-9_]+\b`, literalID),
+		mustCompile(`\b0[xX][0-9a-fA-F_]+\b`, literalID),
 		mustCompile(`\b([0-9][0-9_]*\.([0-9][0-9_]*)?|`+
 			`([0-9][0-9_]*)?\.[0-9][0-9_]*|[[0-9][0-9_]*)`+
-			`([Ee][+-]?[0-9][0-9_]*)?\b`, literalId),
-		mustCompile(`'(\\.|[^'])*?'|"(\\.|[^"])*?"`, literalId),
-		mustCompile("`(\\.|[^`])*?`", literalId),
-		mustCompile(`%[iIqQrRsSwWxX](\(.*?\)|\{.*?\})`, literalId),
+			`([Ee][+-]?[0-9][0-9_]*)?\b`, literalID),
+		mustCompile(`'(\\.|[^'])*?'|"(\\.|[^"])*?"`, literalID),
+		mustCompile("`(\\.|[^`])*?`", literalID),
+		mustCompile(`%[iIqQrRsSwWxX](\(.*?\)|\{.*?\})`, literalID),
 		// missing: regexp literals, because of confusion with division
 		// missing: recognition of string interpolation: #{...}
 		// should symbols be highlighted as literals?
@@ -262,7 +262,7 @@ func rubyRules() []edit.Rule {
 // svgRules returns syntax highlighting rules for SVG.
 func svgRules() []edit.Rule {
 	return []edit.Rule{
-		mustCompile(`<!--.*-->`, commentId),
+		mustCompile(`<!--.*-->`, commentID),
 		mustCompile(`\b(a|altGlyph(Def|Item)?|animate(Motion|Transform)?|`+
 			`circle|clipPath|color-profile|cursor|defs|desc|ellipse|`+
 			`fe(Blend|(Color|Convolve)Matrix|ComponentTransfer|Composite|`+
@@ -273,7 +273,7 @@ func svgRules() []edit.Rule {
 			`glyph(Ref)?|hkern|image|line(arGradient)?|marker|mask|metadata|`+
 			`missing-glyph|m?path|pattern|poly(gon|line)|radialGradient|rect|`+
 			`script|set|stop|style|svg|switch|symbol|text(Path)?|title|tref|`+
-			`tspan|use|view|vkern)\b`, keywordId),
-		mustCompile(`'(\\.|[^'])*?'|"(\\.|[^"])*?"`, literalId),
+			`tspan|use|view|vkern)\b`, keywordID),
+		mustCompile(`'(\\.|[^'])*?'|"(\\.|[^"])*?"`, literalID),
 	}
 }

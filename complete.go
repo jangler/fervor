@@ -130,12 +130,12 @@ func completeWord(b *edit.Buffer, prefix string, forward bool) string {
 
 		// go to next line
 		if forward {
-			line += 1
+			line++
 			if line > endLine {
 				line = 0
 			}
 		} else {
-			line -= 1
+			line--
 			if line < 1 {
 				line = endLine
 			}
@@ -161,9 +161,8 @@ func expandVars(path string) string {
 func isDir(path string) bool {
 	if fi, err := os.Stat(path); err == nil {
 		return fi.IsDir()
-	} else {
-		return false
 	}
+	return false
 }
 
 // minPath returns the shortest valid representation of the given file path.
