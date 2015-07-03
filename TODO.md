@@ -3,8 +3,6 @@ TODO
 
 0.3.0
 -----
-- Plugin help
-	- Back out of this shit
 - Make in-buffer tab completion work as expected w/r/t current line
 - Fix the window expose issue
 - Look into pipe command text not coming through

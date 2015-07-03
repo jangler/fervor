@@ -42,7 +42,6 @@ Usage
 	  -dark=false: use dark color scheme
 	  -expandtab=false: insert spaces using the Tab key
 	  -font="": use the font at the given path
-	  -kwprog="": program to use for keyword lookup
 	  -ptsize=12: set point size of font
 	  -tabstop=8: set width of tab stops, in columns
 	  -version=false: print version information and exit
@@ -64,7 +63,6 @@ Key bindings
 	Ctrl+G           Go to line...
 	Ctrl+H           Delete character backward
 	Ctrl+I           Insert tab
-	Ctrl+K           Keyword lookup
 	Ctrl+L           Toggle Unix/DOS line endings
 	Ctrl+N           Next match
 	Ctrl+Shift+N     Previous match

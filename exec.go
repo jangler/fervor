@@ -16,7 +16,6 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/jangler/edit"
 	"github.com/veandco/go-sdl2/sdl"
 )
 
@@ -68,66 +67,6 @@ func reportExitStatus(cmd string, err error) {
 	disableGC()
 	event.Data2 = unsafe.Pointer(&msg)
 	sdl.PushEvent(&event)
-}
-
-// keywordLookup runs the current keyword program with the buffer contents
-// written to standard input and cursor position passed as two command-line
-// arguments. Status events are pushed to the event queue on completion.
-func keywordLookup(b *edit.Buffer, defaultStatus string) string {
-	// TODO: Refactor this. It's very similar to pipeCmd().
-
-	// initialize command
-	ins := b.IndexFromMark(insMark)
-	cmd := exec.Command(kwprogFlag, fmt.Sprintf("%d", ins.Line),
-		fmt.Sprintf("%d", ins.Char))
-	inPipe, err := cmd.StdinPipe()
-	if err != nil {
-		return err.Error()
-	}
-	outPipe, err := cmd.StdoutPipe()
-	if err != nil {
-		return err.Error()
-	}
-	if err := cmd.Start(); err != nil {
-		return err.Error()
-	}
-
-	go func() {
-		// write to stdin and read from stdout
-		go func() {
-			if _, err := io.WriteString(inPipe,
-				b.Get(edit.Index{1, 0}, b.End())); err != nil {
-				log.Print(err)
-			}
-			inPipe.Close()
-		}()
-		var outBytes []byte
-		go func() {
-			if outBytes, err = ioutil.ReadAll(outPipe); err != nil {
-				log.Print(err)
-			}
-		}()
-
-		if err := cmd.Wait(); err != nil {
-			reportExitStatus(kwprogFlag, err)
-		} else if outBytes != nil {
-			// strip trailing newline
-			if len(outBytes) > 0 && outBytes[len(outBytes)-1] == '\n' {
-				outBytes = outBytes[:len(outBytes)-1]
-			}
-
-			// push status event
-			output := string(outBytes)
-			var event sdl.UserEvent
-			event.Type = userEventType
-			event.Data1 = unsafe.Pointer(&statusEvent)
-			disableGC()
-			event.Data2 = unsafe.Pointer(&output)
-			sdl.PushEvent(&event)
-		}
-	}()
-
-	return defaultStatus
 }
 
 // pipeCmd pipes selection through cmdString asynchronously and returns a

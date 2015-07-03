@@ -28,7 +28,6 @@ var (
 	darkFlag      = false
 	expandtabFlag = false
 	fontFlag      = ""
-	kwprogFlag    = ""
 	ptsizeFlag    = 12
 	tabstopFlag   = 8
 	versionFlag   = false
@@ -150,8 +149,6 @@ Global and file-specific default options can be specified in either
 		"insert spaces using the Tab key")
 	flag.StringVar(&fontFlag, "font", fontFlag,
 		"use the font at the given path")
-	flag.StringVar(&kwprogFlag, "kwprog", kwprogFlag,
-		"program to use for keyword lookup")
 	flag.IntVar(&ptsizeFlag, "ptsize", ptsizeFlag, "set point size of font")
 	flag.IntVar(&tabstopFlag, "tabstop", tabstopFlag,
 		"set width of tab stops, in columns")
@@ -174,7 +171,6 @@ func parseFlags() {
 		"dark":      fmt.Sprintf("%v", darkFlag),
 		"expandtab": fmt.Sprintf("%v", expandtabFlag),
 		"font":      fmt.Sprintf("%v", fontFlag),
-		"kwprog":    fmt.Sprintf("%v", kwprogFlag),
 		"ptsize":    fmt.Sprintf("%v", ptsizeFlag),
 		"tabstop":   fmt.Sprintf("%v", tabstopFlag),
 	}
