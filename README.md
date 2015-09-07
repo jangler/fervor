@@ -39,12 +39,18 @@ Usage
 	Usage: fervor [<option> ...] [<file> ...]
 
 	Options:
-	  -dark=false: use dark color scheme
-	  -expandtab=false: insert spaces using the Tab key
-	  -font="": use the font at the given path
-	  -ptsize=12: set point size of font
-	  -tabstop=8: set width of tab stops, in columns
-	  -version=false: print version information and exit
+	  -dark
+			use dark color scheme
+	  -expandtab
+			insert spaces using the Tab key
+	  -font string
+			use the font at the given path
+	  -ptsize int
+			set point size of font (default 12)
+	  -tabstop int
+			set width of tab stops, in columns (default 8)
+	  -version
+			print version information and exit
 
 	Global and file-specific default options can be specified in either
 	~/fervor.ini or ~/.config/fervor.ini.
