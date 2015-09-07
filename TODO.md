@@ -1,7 +1,7 @@
 TODO
 ====
 
-0.3.0
+0.4.0
 -----
 - Make in-buffer tab completion work as expected w/r/t current line
 - Fix the window expose issue
@@ -11,7 +11,7 @@ TODO
 - In-editor help?
 - Set options dynamically?
 
-0.4.0
+0.5.0
 -----
 - Terminal-ish support (interact with launched processes)
 - Edit remote files

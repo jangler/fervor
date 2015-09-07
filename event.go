@@ -570,13 +570,18 @@ func eventLoop(pane *Pane, status string, font *ttf.Font, win *sdl.Window) {
 				}
 			case sdl.K_v:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
+					text, err := sdl.GetClipboardText()
+					if err != nil {
+						rc.Status = err.Error()
+						break
+					}
 					sel := rc.Focus.IndexFromMark(selMark)
 					insert := rc.Focus.IndexFromMark(insMark)
 					if sel != insert {
 						rc.Focus.Delete(order(sel, insert))
 						insert, _ = order(sel, insert)
 					}
-					rc.Focus.Insert(insert, sdl.GetClipboardText())
+					rc.Focus.Insert(insert, text)
 				}
 			case sdl.K_w:
 				if event.Keysym.Mod&sdl.KMOD_CTRL != 0 {
