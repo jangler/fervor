@@ -1,6 +1,11 @@
 Fervor
 ======
 
+**Disclaimer: Changes to the veandco/go-sdl2 packages since the development of
+this software may have created problematic incompatibilities, which I do not
+plan to investigate anytime soon. If you would like to try Fervor, I recommend
+compiling against a veandco/go-sdl2 commit from September 2015.**
+
 ![screenshot](http://jangler.info/dl/fervor-screenshot-0.3.0.png 'screenshot')
 
 A graphical, modeless, cross-platform text editor influenced by Acme, vi, and
